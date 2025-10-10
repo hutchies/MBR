@@ -1,8 +1,8 @@
 import PocketBase from 'pocketbase';
 
 const PB_URL = 'https://hutchies.pockethost.io/'; // 'http://127.0.0.1:8090';
-const PB_USER = 'test@test.com'; // Soon make this individual by username
-const PB_PWD = 'testpassword';
+const PB_USER = 'test@gmail.com'; // Soon make this individual by username
+const PB_PWD = 'test';
 
 export let pb;
 let pb_auth_data; 
@@ -17,9 +17,13 @@ export async function auth(){
    
 }
 
+function getUsername(){
+    return 'user';
+}
+
 export async function adminLogin(){
     if(pb.authStore && pb.authStore.isValid) pb.authStore.clear();
-    await pb.collection('users').authWithPassword(PB_USER, PB_PWD);
+    await pb.collection('_superusers').authWithPassword(PB_USER, PB_PWD);
 }
 
 export function amAdmin(){

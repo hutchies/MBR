@@ -1,12 +1,17 @@
 <script>
 
     import mammoth from "mammoth"
-    import {data } from '$lib/data.js';
+    //import { data } from '$lib/data.js';
     import { paginate, LightPaginationNav } from 'svelte-paginate'
     import { parse } from '$lib/boolean.js';
     import { onMount } from "svelte";
+    import { pb } from "$lib/pb";
 
     let tags = ['General','Monophony to 1300','Polyphony to 1300','1300s','1400s','1500s','1600s','1700s','1800s','1900s','2000s','Jazz','Popular','Film']
+
+    export let data;
+    console.log(data);
+    data = data.data;
 
     let result = '';
 
@@ -17,6 +22,8 @@
     //let tags = Array.from(new Set(data.filter(d => d.tags).flatMap(d => d.tags)));
     let contributors = Array.from(new Set(data.filter(d => d.tags).flatMap(d => d.contributors)));
 
+    
+
     function getDate(c){
         let d = c.match(/(\d\d\d\d)\)/);
         if(d && d[1]) return d[1];
@@ -25,7 +32,7 @@
 
     function allText(d){
         let text = '';
-        for(let a of ['citation', ...possibleAtts]){
+        for(let a of ['author', 'citation', ...possibleAtts]){
             if(d[a]) text += `${joinPossArray(d[a])} `;
         }
         return text.trim();
@@ -52,6 +59,9 @@
         bitsToHighlight = [];
         let record = d.record;
         if(currentSearch == 'simple') return baseForm(allText(d)).includes(baseForm(fullText));
+        if(currentSearch == 'citation'){
+            return baseForm(`${d.author}. ${d.citation}`).includes(baseForm(fullText))
+        }
         if(currentSearch != 'advanced'){
             return baseForm(joinPossArray(d[currentSearch]) || '').includes(baseForm(fullText))
         }
@@ -111,6 +121,7 @@
 
         if(!t.blurStart) re = `\\b${re}`;
         if(!t.blurEnd) re = `${re}\\b`;
+        //console.log(t, d, re);
         let exp = new RegExp(re);
 
         return exp.test(d.replaceAll(/\s+/g, ' '));
@@ -132,7 +143,7 @@
             bitsToHighlight = [fullText];
         }
         let text = origText;
-        console.log(bitsToHighlight)
+        //le.log(bitsToHighlight)
         for(let bit of bitsToHighlight){
             let t = baseForm(text);
             let re = new RegExp(baseForm(bit), 'ig')
@@ -157,6 +168,7 @@
     let searchTypes = {
         'simple': 'Simple (phrase in full text)',
         'advanced': 'Advanced...',
+        'author': 'Author name only',
         'citation': 'Citation only',
         'annotation': 'Annotation only',
         'sources': 'Sources list only',
@@ -165,7 +177,7 @@
 
     let pageSizes = [10, 25, 50, 100, -1]
 
-    let sortByAuthor = (a,b) => a.citation.localeCompare(b.citation);
+    let sortByAuthor = (a,b) => a.author.localeCompare(b.author);
     let sortByDate = (a,b) => getDate(a.citation) - getDate(b.citation);
 
     function filterData(){
@@ -189,7 +201,7 @@
 
     function nameStartsWith(d, n){
         if(!n) return true;
-        let norm = baseForm(d.citation);
+        let norm = baseForm(d.author);
         if(norm.startsWith(n)) return true;
     }
 
@@ -204,7 +216,7 @@
     function getInitials(data){
         let i = [];
         for(let d of data){
-            let n = baseForm(d.citation)[0].toUpperCase();
+            let n = baseForm(d.author)[0].toUpperCase();
             if(!i.includes(n)){
                 i.push(n)
             }
@@ -213,6 +225,7 @@
     }
 
     function getLastName(t){
+        if(!t) return '';
         return t.split(' ').slice(-1)[0];
     }
 
@@ -257,6 +270,41 @@
     });
 
     let specificRecord = false;
+
+    function j(arr){
+        if(!arr) return null;
+        return {arr}
+    }
+
+    async function updateDB() {
+        let promises = [];
+
+        //const batch = pb.createBatch();
+
+
+        let count = 0;
+        for(let d of data){
+            try{
+                let result = await pb.collection('borrowing').create({
+                    ...d
+                });
+                count++;
+                console.log(`Completed ${count} of ${data.length}`);
+            }catch(e){
+                console.log(e);
+            }
+            
+        }
+        //console.log(batch);
+       /* try{
+            let result = await batch.send();
+            alert('db updated');
+        }catch(e){
+            console.log('Error!', e)
+        }*/
+        
+        
+    }
 
 </script>
 <svelte:head>
@@ -342,6 +390,7 @@
                 </ol>
                 </details>
             {/if}
+            <!--<button on:click={updateDB}>Update DB</button>-->
             <hr />
             <div class="initials_list">
                 <div style="justify-self: flex-start;">Filter by author:</div>
@@ -357,6 +406,7 @@
         <div class="main_list">
             {#each paginatedData as d}
                 <details class="bib" open={specificRecord == d.record} on:click={e => {console.log(d)}}><summary>
+                    <strong>{@html highlightMatch(d.author, 'author')}{#if !d.author.endsWith('.')}.{/if} </strong>
                     {@html highlightMatch(d.citation, 'citation')}
                 <!--<div class="chips">--> 
                         {#each possibleAtts as a}
@@ -520,7 +570,7 @@
     details.bib > summary {
         cursor: pointer;
         list-style: none;
-        font-weight: bold;
+        /*font-weight: bold;*/
         margin: -0.5em -0.5em 0;
         padding: 0.5em;
         background-color: white;
