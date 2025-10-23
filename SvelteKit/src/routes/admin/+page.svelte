@@ -1,0 +1,186 @@
+<script>
+    import BibDisplay from '$lib/BibDisplay.svelte';
+    import { login, pb } from '$lib/pb.js';
+    import { onMount } from 'svelte';
+    import { data as localData } from '$lib/data.js';
+    
+    let data = localData;
+    //data = data.data;
+    
+    async function loadData(){
+        try{
+            let remoteData = await pb.collection('borrowing').getFullList();
+            data = remoteData;
+            console.log('synced with remote')
+        }catch(e){
+            console.log('Unable to load remote data', e)
+        }
+    }
+
+    onMount(() => {
+        try{
+            pb.collection('borrowing').subscribe('*', (e) => {
+                console.log('db update', e);
+                if(e.action == 'create'){
+                    let rec = data.find(d => d.record == e.record.record);
+                    if(!rec) data = [...data, {...e.record}];
+                }else if(e.action == 'update'){
+                    let rec = data.find(d => d.record == e.record.record);
+                    if(rec){
+                        rec = {...rec, ...e.record};
+                    }
+                    data = data;
+                }else if(e.action == 'delete'){
+                    let rec = data.find(d => d.record == e.record.record);
+                    data = data.filter(d => d.record != e.record.record)
+                }
+                nextRecord = Math.max(...data.map(d => d.record)) + 1;
+            })
+        }catch(e){
+            console.log("Error subscribing", e);
+        }
+        
+    }) 
+    
+    $: console.log('data updated', data);
+
+    let nextRecord = Math.max(...data.map(d => d.record)) + 1;
+
+    let logged_in = false;
+    let error = '';
+
+    let user = '';
+    let pwd = '';
+    
+    async function logMeIn(){
+        try{
+            await login(user, pwd);
+            logged_in = true;
+        }catch(e){
+            error = e.toString();
+        }
+    }
+
+    let newRecord = {};
+
+    async function addItem(){
+        
+        console.log(newRecord);
+        let rec = {...newRecord};
+        rec.record = nextRecord;
+        if(rec.works){
+            rec.works = rec.works.split(';').map(w => w.trim());
+        }
+        if(rec.contributors){
+            rec.contributors = rec.contributors.split(',').map(w => w.trim());
+        }
+        if(rec.sources){
+            rec.sources = rec.sources.split(';').map(w => w.trim());
+        }
+        try{
+            await pb.collection('borrowing').create(rec);
+            if(!data.some(d => d.record == rec.record)) data = [...data, rec];
+            // Add itself, trusting that the update mechanism will successfully ignore otherwise
+            result = 'Record added';
+            nextRecord = Math.max(...data.map(d => d.record)) + 1;
+            setTimeout(() => {result = ''}, 2000)
+        }catch(e){
+            console.log("Error creating record!", e);
+            result = `Error: ${e}`
+        }
+        
+    }
+
+    let result = ''
+</script>
+<svelte:head>
+    <title>Musical Borrowing & Reworking: admin</title>
+</svelte:head>
+    <h1>Musical Borrowing and Reworking: admin</h1>
+        <div class="attribution">
+            <div>
+                Data from the <a href="https://web.archive.org/web/20250507173203/https://chmtl.indiana.edu/borrowing/">CHTML Musical Borrowing & Reworking project</a>. 
+            </div>
+            <div>
+                Subject to a <a href="https://creativecommons.org/licenses/by/4.0/">Creative Commons Attribution 4.0 International License</a>
+            </div>
+        </div>
+        {#if !logged_in}
+        <hr />
+            <b>You must log in to access editing tools.</b>
+            <div>
+                Username: <input type="text" bind:value={user} />
+            </div>
+            <div>
+                Password: <input type="password" bind:value={pwd} />
+            </div>
+            <div>
+                <button on:click={logMeIn}>Log in</button>
+                {#if error}{error}{/if}
+            </div>
+        <hr />
+        {:else}
+        <hr />
+            <details open><summary>Add new item:</summary>
+                <div>
+                    Author: <input type="text" bind:value={newRecord.author} />
+                </div><div>
+                    Citation: <div contenteditable bind:innerHTML={newRecord.citation}></div>
+                </div><div>
+                    Annotation: <div contenteditable bind:innerHTML={newRecord.annotation}></div>
+                </div><div>
+                    Work(s) – separate with ';': <div contenteditable bind:innerHTML={newRecord.works}></div>
+                </div><div>
+                    Source(s) – separate with ';': <div contenteditable bind:innerHTML={newRecord.sources}></div>
+                </div><div>
+                    Contributor(s): <input type="text" bind:value={newRecord.contributor} />
+                </div><div>
+                    Record number (autogenerated): {nextRecord}
+                </div><div>
+                    <button on:click={addItem}>Add to database</button>
+                    {result}
+                </div>
+            </details>
+            <hr />
+        {/if}
+        <BibDisplay data={data} />
+        <div class="version">
+            v0.14 (10 Oct 2025)
+        </div>
+<style>
+
+    h1 {
+        font-size: 1.7em;
+        font-family: sans-serif;
+        margin-top: 0.2em;
+        margin-bottom: 0.2em;
+    }
+    
+
+    .version {
+        position: absolute;
+        bottom: 5px;
+        left: 5px;
+        font-size: 0.6em;
+        font-style: italic;
+        visibility: hidden;
+    }
+
+    :global(body) {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        height: calc(100vh - 16px);
+    }
+
+    hr {
+        width: 100%;
+    }
+
+    div [contenteditable] {
+        min-width: 20em;
+        min-height: 2em;
+        background-color: ivory;
+    }
+
+</style>

@@ -15,10 +15,23 @@ AndExpression
 
 NotExpression
 = "NOT" _ not:StarUnit {return {not}} 
-/ StarUnit
+/ FilterUnit
+
+FilterUnit
+= filter:(@Filter ":")? unit:StarUnit {
+	return {
+    	...unit,
+        filter
+    }
+}
+
+
+Filter
+= "works"/"sources"/"annotation"/"author"/"citation"/"record"/"contributor"/"contributors"/"tags"/"tag"
 
 StarUnit
-= blurStart:"*"? term:Unit blurEnd:"*"? { return {blurStart, term, blurEnd}}
+= 
+blurStart:"*"? term:Unit blurEnd:"*"? { return {blurStart, term, blurEnd}}
 / "(" _ @OrExpression _ ")"
 
 Unit

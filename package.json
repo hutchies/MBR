@@ -1,30 +1,23 @@
 {
-	"name": "mbr-bibliography",
-	"private": true,
-	"version": "0.0.1",
-	"type": "module",
-	"scripts": {
-		"dev": "vite dev",
-		"build": "vite build",
-		"preview": "vite preview",
-		"prepare": "svelte-kit sync || echo ''"
-	},
-	"devDependencies": {
-		"@sveltejs/adapter-auto": "^6.1.0",
-		"@sveltejs/adapter-static": "^3.0.10",
-		"@sveltejs/kit": "^2.43.2",
-		"@sveltejs/vite-plugin-svelte": "^6.2.0",
-		"svelte": "^5.39.5",
-		"vite": "^7.1.7"
-	},
-	"dependencies": {
-		"docx-parser": "^0.2.1",
-		"docx4js": "^3.3.0",
-		"mammoth": "^1.11.0",
-		"officeparser": "^5.2.1",
-		"peggy": "^5.0.6",
-		"pocketbase": "^0.26.2",
-		"svelte-paginate": "^0.1.0",
-		"textract": "^2.5.0"
-	}
+  "name": "mbr",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "^6.2.1",
+    "svelte": "^5.39.11",
+    "vite": "^7.1.9"
+  },
+  "dependencies": {
+    "peggy": "^5.0.6",
+    "pocketbase": "^0.26.2",
+    "svelte-drag": "^3.1.0",
+    "svelte-multiselect": "^11.2.4",
+    "svelte-paginate": "^0.1.0"
+  }
 }

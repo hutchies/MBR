@@ -13,6 +13,22 @@
     "file": "chunks/context.js",
     "name": "context"
   },
+  "_data.cii7wEHE.css": {
+    "file": "_app/immutable/assets/data.cii7wEHE.css",
+    "src": "_data.cii7wEHE.css"
+  },
+  "_data.js": {
+    "file": "chunks/data.js",
+    "name": "data",
+    "imports": [
+      "_index.js",
+      "_utils2.js",
+      "_context.js"
+    ],
+    "css": [
+      "_app/immutable/assets/data.cii7wEHE.css"
+    ]
+  },
   "_environment.js": {
     "file": "chunks/environment.js",
     "name": "environment"
@@ -120,11 +136,23 @@
     "isEntry": true,
     "imports": [
       "_index.js",
-      "_utils2.js",
-      "_context.js"
+      "_data.js"
     ],
     "css": [
-      "_app/immutable/assets/_page.BNju41AM.css"
+      "_app/immutable/assets/_page.Dx9vj72O.css"
+    ]
+  },
+  "src/routes/admin/+page.svelte": {
+    "file": "entries/pages/admin/_page.svelte.js",
+    "name": "entries/pages/admin/_page.svelte",
+    "src": "src/routes/admin/+page.svelte",
+    "isEntry": true,
+    "imports": [
+      "_index.js",
+      "_data.js"
+    ],
+    "css": [
+      "_app/immutable/assets/_page.BtvVTrf_.css"
     ]
   }
 }

@@ -1,3 +1,5 @@
+export let localDataLastUpdated = "2025-10-11 00:00:00.000Z";
+
 export let data = [
   {
     "citation": "<em>Wandernde Melodien. Eine musikalische Studie.</em> Leipzig: C. G. Roder, 1868. 2nd ed., Berlin: Brachvogel &amp;Ranfl, 1889; reprint, Oosterhout: Anthropological Publications, 1965.",

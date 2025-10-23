@@ -9,6 +9,8 @@ let pb_auth_data;
 
 let dbName = 'mbr';
 
+let adminID = 'placeholder'
+
 pb = new PocketBase(PB_URL);
 
 export async function auth(){
@@ -21,9 +23,9 @@ function getUsername(){
     return 'user';
 }
 
-export async function adminLogin(){
+export async function login(user, pwd){
     if(pb.authStore && pb.authStore.isValid) pb.authStore.clear();
-    await pb.collection('_superusers').authWithPassword(PB_USER, PB_PWD);
+    await pb.collection('_superusers').authWithPassword(user, pwd);
 }
 
 export function amAdmin(){
@@ -41,7 +43,7 @@ export async function PBLogin(username){
     }catch(e){
         console.log('Error logging in:', e)
         // Presume this is that it needs creating
-        await adminLogin();
+        await login(PB_USER, PB_PWD);
         try{
             await pb.collection('users').create({
                 email: `${username}@${dbName}.com`,
