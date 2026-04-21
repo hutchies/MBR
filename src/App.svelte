@@ -7,7 +7,7 @@
     import AdminView from './lib/AdminView.svelte';
     import { data, params } from './lib/shared.svelte.js';
     import { localDataLastUpdated } from './lib/data';
-    import { path } from 'elegua';
+    import { path, resolve } from 'elegua';
     import Home from './Home.svelte';
     import About from './About.svelte';
     import Ack from './Ack.svelte';
@@ -86,23 +86,16 @@
         <div class="top">
             <div class="nav">
                 <a href="/" class:selected={$path == '/'}>Home</a>
-                <a href="/db" class:selected={$path == '/browse'}>Browse</a>
+                <a href="/browse" class:selected={$path == '/browse' || resolve($path, /(record|search)\/(.+)/)}>Browse</a>
                 <a href="/about" class:selected={$path == '/about'}>About</a>
                 <a href="/acknowledgements" class:selected={$path == '/acknowledgements'}>Acknowledgements</a>
             </div>
-            <div class="attribution">
-                <div>
-                    Data from the <a href="https://web.archive.org/web/20250507173203/https://chmtl.indiana.edu/borrowing/">CHTML Musical Borrowing & Reworking project</a> 
-                </div>
-                <div>
-                    Subject to a <a href="https://creativecommons.org/licenses/by/4.0/">Creative Commons Attribution 4.0 International License</a>
-                </div>
-            </div>
+            
         </div>
         
     </div>
     <hr />
-    {#if $path == '/admin' || $path == '/browse'}
+    {#if $path == '/admin' || $path == '/browse' || resolve($path, /(record|search)\/(.+)/)}
         {#if $path == '/admin'}
                 <AdminView />
             {/if}
@@ -114,16 +107,28 @@
             <BibDisplay />
     {:else}
         <main>
-            {#if $path === '/'}
-                <Home />
-            {:else if $path === '/about'}
+            {#if $path === '/about'}
                 <About />
             {:else if $path === '/acknowledgements'} 
                 <Ack />
+            {:else}
+                <Home />
             {/if}
         </main>
     {/if}
-    
+    <hr />
+    <div class="attribution">
+        <img src="/by.png" />
+        <div class="attrib_text">
+            <div>
+                Data from the <a href="https://web.archive.org/web/20250507173203/https://chmtl.indiana.edu/borrowing/">CHTML Musical Borrowing & Reworking project</a> 
+            </div>
+            <div>
+                Subject to a <a href="https://creativecommons.org/licenses/by/4.0/">Creative Commons Attribution 4.0 International License</a>
+            </div>
+        </div>
+        
+    </div>
     <div class="version" style={$path === '/admin' ? "visibility: visible;" : ''}>
         v0.16 (21 April 2026) 
     </div>
@@ -165,7 +170,7 @@
     .top {
         display: flex;
         flex-wrap: nowrap;
-        justify-content: space-between;
+        justify-content: center;
         width: 100%;
     }
 
@@ -183,8 +188,16 @@
     }
 
     .attribution {
-        text-align: right;
+        height: 2em;
+        align-self: center;
+        margin-bottom: 1em;
+        display: flex;
+        gap: 0.5em;
+    }
+
+    .attrib_text {
         font-style: italic;
+        font-size: 0.8em;
     }
     
     a.selected {
@@ -193,6 +206,7 @@
     }
 
     main {
+        flex-grow: 1;
       overflow-y: auto;  
     }
 

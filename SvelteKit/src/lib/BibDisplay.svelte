@@ -6,6 +6,7 @@
     import { onMount } from "svelte";
     import { pb } from "$lib/pb";
     import { tags } from '$lib/shared.js';
+    import { path, resolve, params } from 'elegua';
     
     export let data;
 
@@ -233,7 +234,7 @@
     let copiedToClipboard = false;
 
     async function exportLink(r){
-        let toCopy = `${window.location.href.split('?')[0]}?record=${r}`;
+        let toCopy = `${window.location.origin}/record/${r}`//`${window.location.href.split('?')[0]}?record=${r}`;
         await navigator.clipboard.writeText(toCopy);
         copiedToClipboard = r;
     }
@@ -241,26 +242,25 @@
     async function exportSearch(){
         let p = new URLSearchParams();
         p.set('searchType', currentSearch);
-        p.set('search', fullText);
-        let toCopy = `${window.location.split('?')[0]}?${p.toString()}`;
+        //p.set('search', fullText);
+        let toCopy = `${window.location.origin}/search/${encodeURIComponent(fullText)}`//`${window.location.split('?')[0]}?${p.toString()}`;
         await navigator.clipboard.writeText(toCopy);
     }
 
     onMount(() => {
-        let params = new URLSearchParams(window.location.search);
-
-        if(params.has('record')){
+        if(resolve($path, "/record/:id")){
+            specificRecord = $params.id;
             currentSearch = 'advanced';
-            fullText = `record:${params.get('record')}`;
-            tempFT = fullText;
-            specificRecord = params.get('record');
-        }
-        if(params.has('search')){
-            fullText = params.get('search');
+            fullText = `record:${record}`;
             tempFT = fullText;
         }
-        if(params.has('searchType')){
-            currentSearch = params.get('searchType')
+        if(resolve($path, "/search/:text")){
+            fullText = decodeURIComponent($params.text);
+            tempFT = fullText;
+        }
+        let up =  new URLSearchParams(window.location.search);
+        if(up.has('searchType')){
+            currentSearch = up.get('searchType')
         }
     });
 

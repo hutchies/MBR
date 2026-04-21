@@ -6,7 +6,8 @@
     import { parse } from './boolean.js';
     import { onMount } from "svelte";
     import { pb } from "./pb.js";
-    import { tags, data, contributors, params } from './shared.svelte.js';
+    import { tags, data, contributors, params} from './shared.svelte.js';
+    import { path, resolve, match, params as elegua_params} from 'elegua';
 
     let result = '';
 
@@ -83,9 +84,21 @@
         }
         return text.trim();
     }
+    
+    function dumbQuotes(s){
+        s = s.replace(/”/g,"\"");
+        s = s.replace(/“/g,"\"");
+        s = s.replace(/“/g,"\"");
+        s = s.replace(/”/g,"\"");
+        s = s.replace(/‘/g,"'");
+        s = s.replace(/’/g,"'");
+        s = s.replace(/‘/g,"'");
+        s = s.replace(/’/g,"'");
+        return s;
+    }
 
     function baseForm(s){
-        return s.normalize('NFD').replace(/[\u0300-\u036f]/g, "").toLowerCase()
+        return dumbQuotes(s).normalize('NFD').replace(/[\u0300-\u036f]/g, "").toLowerCase()
     }
 
     function filterByOptions(d, t, c, ft){
@@ -325,7 +338,7 @@
     let copiedToClipboard = false;
 
     async function exportLink(r){
-        let toCopy = `${window.location.href.split('?')[0]}?record=${r}`;
+        let toCopy = `${window.origin}/record/${r}`;
         await navigator.clipboard.writeText(toCopy);
         copiedToClipboard = r;
     }
@@ -356,8 +369,8 @@
     async function exportSearch(){
         let p = new URLSearchParams();
         p.set('searchType', currentSearch);
-        p.set('search', fullText);
-        let toCopy = `${window.location.href.split('?')[0]}?${p.toString()}`;
+        //p.set('search', fullText);
+        let toCopy = `${window.location.origin}/search/${encodeURIComponent(fullText)}?${p.toString()}`;
         await navigator.clipboard.writeText(toCopy);
         copiedToClipboard = `search ${fullText}`;
     }
@@ -365,22 +378,24 @@
     let advancedRulesHidden = false;
 
     onMount(() => {
-        let p = new URLSearchParams(window.location.search);
+        //let p = new URLSearchParams(window.location.search);
 
-        if(p.has('record')){
+        if(resolve($path, "/record/:id")){
+            specificRecord = $elegua_params.id;
             currentSearch = 'advanced';
-            fullText = `record:${p.get('record')}`;
+            fullText = `record:${specificRecord}`;
             tempFT = fullText;
-            specificRecord = p.get('record');
+            //specificRecord = p.get('record');
             advancedRulesHidden = true;
         }
-        if(p.has('search')){
-            fullText = p.get('search');
+        if(resolve($path, /search\/([^?]+)/)){
+            fullText = decodeURIComponent($match[1]);
             tempFT = fullText;
             advancedRulesHidden = true;
         }
-        if(p.has('searchType')){
-            currentSearch = p.get('searchType')
+        let up =  new URLSearchParams(window.location.search);
+        if(up.has('searchType')){
+            currentSearch = up.get('searchType')
         }
     });
 
@@ -485,7 +500,7 @@
                 <li>You may use * at the beginning <b>or</b> end of a term to allow partial matches. For example Schub* would match Schubert, Schubertian, Schubertiade, etc.; *iana would match Schumanniana, Beethoveniana, Kreisleriana, etc.</li>
                 <li>Preceding any term (or parenthesis) with 'author', 'works', 'annotation', etc. searches for that element <em>only</em> in the relevant place. So <code>irony works:(Mahler OR Schumann)</code> would search for 
                     records containing 'irony' which include either Mahler or Schumann in their works list.</li>
-                <li>The syntax record:X selects a specific record by its internal reference number. This is used to make it easy to send links to a specific record.</li>
+                <li>The syntax <code>record:X</code> selects a specific record by its internal reference number. This is used to make it easy to send links to a specific record.</li>
             </ol>
             </details>
         {/if}
@@ -505,10 +520,11 @@
 <hr />
 <div class="main_list">
     {#each paginatedData as d}
-        <details class="bib" open={specificRecord == d.record} on:click={e => {console.log(getDate(d.citation, true))}}><summary bind:this={sourceElements[d.record]}>
-            <span class="author">{@html highlightMatch(d.author, 'author')}{#if !d.author.endsWith('.')}.{/if} </span>
-            {@html highlightMatch(d.citation, 'citation')}
-        <!--<div class="chips">--> 
+        <details class="bib" open={specificRecord == d.record} on:click={e => {console.log(getDate(d.citation, true))}}><summary>
+            <span bind:this={sourceElements[d.record]}><span class="author">{@html highlightMatch(d.author, 'author')}{#if !d.author.endsWith('.')}.{/if} </span>
+                {@html highlightMatch(d.citation, 'citation')}
+            </span>
+            <!--<div class="chips">--> 
                 {#each possibleAtts as a}
                     {#if d[a]}<div class="chip {a}">{a}</div>{/if}
                 {/each}
