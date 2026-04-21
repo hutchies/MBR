@@ -597,6 +597,7 @@
     }
 
     .main_list {
+        width: 100%;
         flex-grow: 1;
         overflow-y: auto;
     }
