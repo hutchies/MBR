@@ -71,7 +71,7 @@
     {/if}
     <BibDisplay />
     <div class="version">
-        v0.16 (21 April 2026)
+        v0.16 (21 April 2026) 
     </div>
 <style>
 
