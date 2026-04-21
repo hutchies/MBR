@@ -7,6 +7,10 @@
     import AdminView from './lib/AdminView.svelte';
     import { data, params } from './lib/shared.svelte.js';
     import { localDataLastUpdated } from './lib/data';
+    import { path } from 'elegua';
+    import Home from './Home.svelte';
+    import About from './About.svelte';
+    import Ack from './Ack.svelte';
 
     //let data = localData;
 
@@ -67,12 +71,10 @@
 
     onMount(() => {
         let p = new URLSearchParams(window.location.search);
-        if(p.has('admin')){
-            $params.admin = true;
-            verbose = true;
-        }
         if(p.has('verbose')) verbose = true;
     })
+
+    let elements = ['Home', 'Browse', 'About', 'Acknowledgements']
 
 
 </script>
@@ -81,26 +83,48 @@
 </svelte:head>
     <div id="header">
         <h1>Musical Borrowing and Reworking: an annotated bibliography</h1>
-        <div class="attribution">
-            <div>
-                Data from the <a href="https://web.archive.org/web/20250507173203/https://chmtl.indiana.edu/borrowing/">CHTML Musical Borrowing & Reworking project</a>. 
+        <div class="top">
+            <div class="nav">
+                <a href="/" class:selected={$path == '/'}>Home</a>
+                <a href="/db" class:selected={$path == '/browse'}>Browse</a>
+                <a href="/about" class:selected={$path == '/about'}>About</a>
+                <a href="/acknowledgements" class:selected={$path == '/acknowledgements'}>Acknowledgements</a>
             </div>
-            <div>
-                Subject to a <a href="https://creativecommons.org/licenses/by/4.0/">Creative Commons Attribution 4.0 International License</a>
+            <div class="attribution">
+                <div>
+                    Data from the <a href="https://web.archive.org/web/20250507173203/https://chmtl.indiana.edu/borrowing/">CHTML Musical Borrowing & Reworking project</a> 
+                </div>
+                <div>
+                    Subject to a <a href="https://creativecommons.org/licenses/by/4.0/">Creative Commons Attribution 4.0 International License</a>
+                </div>
             </div>
         </div>
+        
     </div>
     <hr />
-    {#if $params.admin}
-        <AdminView />
+    {#if $path == '/admin' || $path == '/browse'}
+        {#if $path == '/admin'}
+                <AdminView />
+            {/if}
+            {#if verbose}
+                <div>
+                    Loading status: {loaded ? `loaded remote data in ${loaded} ms` : 'using local data'}.
+                </div>
+            {/if}
+            <BibDisplay />
+    {:else}
+        <main>
+            {#if $path === '/'}
+                <Home />
+            {:else if $path === '/about'}
+                <About />
+            {:else if $path === '/acknowledgements'} 
+                <Ack />
+            {/if}
+        </main>
     {/if}
-    {#if verbose}
-        <div>
-            Loading status: {loaded ? `loaded remote data in ${loaded} ms` : 'using local data'}.
-        </div>
-    {/if}
-    <BibDisplay />
-    <div class="version">
+    
+    <div class="version" style={$path === '/admin' ? "visibility: visible;" : ''}>
         v0.16 (21 April 2026) 
     </div>
 <style>
@@ -136,6 +160,40 @@
     #header {
         text-align: center;
         width: 100%;
+    }
+
+    .top {
+        display: flex;
+        flex-wrap: nowrap;
+        justify-content: space-between;
+        width: 100%;
+    }
+
+    .nav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1vmin;
+        font-family: sans-serif;
+        font-size: 1.2rem;
+    }
+
+    .nav > a {
+        color: unset;
+        text-decoration: unset;
+    }
+
+    .attribution {
+        text-align: right;
+        font-style: italic;
+    }
+    
+    a.selected {
+        font-weight: 500;
+        color: blue;
+    }
+
+    main {
+      overflow-y: auto;  
     }
 
 </style>

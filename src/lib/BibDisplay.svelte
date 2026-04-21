@@ -395,100 +395,101 @@
 
 </script>
 
-<details open style="width: 100%;">
+<details open class="filters">
     <summary>Filter/search records:</summary>
-    <div class="form">
-        <div class="input_block">
-            Show results for tag: 
-            <select bind:value={currentTag}>
-                <option value={false}>All tags</option>
-                {#each tags as t}
-                    <option value={t}>{t}</option>
-                {/each}
-            </select>
+        <div class="form">
+            <div class="input_block">
+                Show results for tag: 
+                <select bind:value={currentTag}>
+                    <option value={false}>All tags</option>
+                    {#each tags as t}
+                        <option value={t}>{t}</option>
+                    {/each}
+                </select>
+            </div>
+            <div class="input_block">
+                Show results for contributor: 
+                <select bind:value={currentContributor}>
+                        <option value={false}>All contributors</option>
+                    {#each $contributors.sort(sortByLastName) as c}
+                        <option value={c}>{c}</option>
+                    {/each}
+                </select>
+            </div>
+            <div class="input_block">
+                Sort by:
+                <select bind:value={currentSort}>
+                    {#each Object.keys(sortTypes) as s}
+                        <option value={sortTypes[s]}>{s}</option>
+                    {/each}
+                </select>
+            </div>
+            <div class="input_block">
+                Show 
+                <select bind:value={pageSize}>
+                    {#each pageSizes as s}
+                        {#if s == -1}
+                            <option value={$data.length}>all</option>
+                        {:else}
+                            <option value={s}>{s}</option>
+                        {/if}
+                    {/each}
+                </select>
+                
+                results per page
+                
+            </div>
+            <div class="input_block">
+                ({dataByName.length} items found of {$data.length} in database)
+            </div>
         </div>
-        <div class="input_block">
-            Show results for contributor: 
-            <select bind:value={currentContributor}>
-                    <option value={false}>All contributors</option>
-                {#each $contributors.sort(sortByLastName) as c}
-                    <option value={c}>{c}</option>
-                {/each}
-            </select>
-        </div>
-        <div class="input_block">
-            Sort by:
-            <select bind:value={currentSort}>
-                {#each Object.keys(sortTypes) as s}
-                    <option value={sortTypes[s]}>{s}</option>
-                {/each}
-            </select>
-        </div>
-        <div class="input_block">
-            Show 
-            <select bind:value={pageSize}>
-                {#each pageSizes as s}
-                    {#if s == -1}
-                        <option value={$data.length}>all</option>
-                    {:else}
-                        <option value={s}>{s}</option>
-                    {/if}
-                {/each}
-            </select>
+        <div class="form">
+            <div class="input_block">
+                Search records: 
+                <input style="width: 20em;" bind:value={tempFT} on:change={e => {fullText = tempFT}}/>
+            </div>
+            <div class="input_block">
+                Type of search:
+                <select bind:value={currentSearch}>
+                    {#each Object.keys(searchTypes) as k}
+                        <option value={k}>{searchTypes[k]}</option>
+                    {/each}
+                </select>
+            </div>
             
-            results per page
-            
-        </div>
-        <div class="input_block">
-            ({dataByName.length} items found of {$data.length} in database)
-        </div>
-    </div>
-    <div class="form">
-        <div class="input_block">
-            Search records: 
-            <input style="width: 20em;" bind:value={tempFT} on:change={e => {fullText = tempFT}}/>
-        </div>
-        <div class="input_block">
-            Type of search:
-            <select bind:value={currentSearch}>
-                {#each Object.keys(searchTypes) as k}
-                    <option value={k}>{searchTypes[k]}</option>
-                {/each}
-            </select>
-        </div>
-        
-        <button on:click={e => {fullText = tempFT;}}>Search</button>
-        {#if fullText}
-            {#if searchError}
-                <span style="color: red;">Incorrect search syntax: check the rules for 'Advanced search'</span>
-            {:else}
-                <div class="chip search chip_details" style="cursor: pointer; display: inline-flex;" on:click={e => {exportSearch()}}>
-                    {#if copiedToClipboard == `search ${fullText}`}
-                        Search copied to clipboard
-                    {:else}
-                        Share this search
-                    {/if}
-                </div>
+            <button on:click={e => {fullText = tempFT;}}>Search</button>
+            {#if fullText}
+                {#if searchError}
+                    <span style="color: red;">Incorrect search syntax: check the rules for 'Advanced search'</span>
+                {:else}
+                    <div class="chip search chip_details" style="cursor: pointer; display: inline-flex;" on:click={e => {exportSearch()}}>
+                        {#if copiedToClipboard == `search ${fullText}`}
+                            Search copied to clipboard
+                        {:else}
+                            Share this search
+                        {/if}
+                    </div>
+                {/if}
             {/if}
+        </div>
+        {#if currentSearch == 'advanced'}
+            <details class="bib" open={!advancedRulesHidden}><summary>Advanced search rules (click to show/hide)</summary>
+            <ol>
+                <li>Any search terms not enclosed in quotation marks are assumed to be connected by the Boolean AND.</li>
+                <li>Enclosing a phrase in "quotation marks" will search for that exact phrase (including spaces).</li>
+                <li>Using NOT before a term will exclude results containing that term.</li>
+                <li>Using OR between terms will include results that match either or both those term.</li>
+                <li>You may combine AND, OR and NOT in a search: NOT has the highest priority, then AND, then OR.</li>
+                <li>Parentheses can be used to change this priority: for example, <code>mahler AND parody OR irony</code> is equivalent to <code>(mahler AND parody) OR irony</code>, but in this case you probably want <code>mahler AND (parody OR irony)</code>.</li>
+                <li>Searches ignore case and diacritics.</li>
+                <li>You may use * at the beginning <b>or</b> end of a term to allow partial matches. For example Schub* would match Schubert, Schubertian, Schubertiade, etc.; *iana would match Schumanniana, Beethoveniana, Kreisleriana, etc.</li>
+                <li>Preceding any term (or parenthesis) with 'author', 'works', 'annotation', etc. searches for that element <em>only</em> in the relevant place. So <code>irony works:(Mahler OR Schumann)</code> would search for 
+                    records containing 'irony' which include either Mahler or Schumann in their works list.</li>
+                <li>The syntax record:X selects a specific record by its internal reference number. This is used to make it easy to send links to a specific record.</li>
+            </ol>
+            </details>
         {/if}
-    </div>
-    {#if currentSearch == 'advanced'}
-        <details class="bib" open={!advancedRulesHidden}><summary>Advanced search rules (click to show/hide)</summary>
-        <ol>
-            <li>Any search terms not enclosed in quotation marks are assumed to be connected by the Boolean AND.</li>
-            <li>Enclosing a phrase in "quotation marks" will search for that exact phrase (including spaces).</li>
-            <li>Using NOT before a term will exclude results containing that term.</li>
-            <li>Using OR between terms will include results that match either or both those term.</li>
-            <li>You may combine AND, OR and NOT in a search: NOT has the highest priority, then AND, then OR.</li>
-            <li>Parentheses can be used to change this priority: for example, <code>mahler AND parody OR irony</code> is equivalent to <code>(mahler AND parody) OR irony</code>, but in this case you probably want <code>mahler AND (parody OR irony)</code>.</li>
-            <li>Searches ignore case and diacritics.</li>
-            <li>You may use * at the beginning <b>or</b> end of a term to allow partial matches. For example Schub* would match Schubert, Schubertian, Schubertiade, etc.; *iana would match Schumanniana, Beethoveniana, Kreisleriana, etc.</li>
-            <li>Preceding any term (or parenthesis) with 'author', 'works', 'annotation', etc. searches for that element <em>only</em> in the relevant place. So <code>irony works:(Mahler OR Schumann)</code> would search for 
-                records containing 'irony' which include either Mahler or Schumann in their works list.</li>
-            <li>The syntax record:X selects a specific record by its internal reference number. This is used to make it easy to send links to a specific record.</li>
-        </ol>
-        </details>
-    {/if}
+    
     <hr />
     <div class="initials_list">
         {#if $params.admin && $params.logged_in}<button on:click={e => {$params.editRecord = 'new';}}>Add new entry</button>{/if}
@@ -705,5 +706,13 @@
 
     .author {
         font-weight: bold;
+    }
+
+    .filters {
+        background-color: ivory;
+        padding: 0.2em 0 0.2em 0.2em;
+        border: 1px solid black;
+        border-radius: 0.5em;
+        width: 100%;
     }
 </style>
