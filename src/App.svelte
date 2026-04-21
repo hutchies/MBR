@@ -62,7 +62,7 @@
     }
     loadData();
 
-    $: console.log('data updated', $data);
+    //$: console.log('data updated', $data);
 
     let verbose = false;
 

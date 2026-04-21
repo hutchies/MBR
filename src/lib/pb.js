@@ -25,7 +25,7 @@ function getUsername(){
 
 export async function login(user, pwd){
     if(pb.authStore && pb.authStore.isValid) pb.authStore.clear();
-    await pb.collection('_superusers').authWithPassword(user, pwd);
+    await pb.collection('mbr_users').authWithPassword(user, pwd);
 }
 
 export function amAdmin(){

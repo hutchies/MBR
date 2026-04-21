@@ -280,7 +280,7 @@
 
     function filterData(fd, d, ct, cc, ft, cs, css){
         //console.log('filtering data', $data);
-        filteredData = $data.filter(d => filterByOptions(d, currentTag, currentContributor, fullText)).sort(currentSort);
+        filteredData = $data.filter(d => !d.deleted).filter(d => filterByOptions(d, currentTag, currentContributor, fullText)).sort(sortByDate).sort(currentSort);
         currentPage = 1;
         //if(navigator && navigator.clipboard) navigator.clipboard.writeText(JSON.stringify(data, null, 2));
     }
@@ -507,7 +507,7 @@
     
     <hr />
     <div class="initials_list">
-        {#if $params.admin && $params.logged_in}<button on:click={e => {$params.editRecord = 'new';}}>Add new entry</button>{/if}
+        {#if $path == '/admin' && $params.logged_in}<button on:click={e => {$params.editRecord = 'new';}}>Add new entry</button>{/if}
         <div style="justify-self: flex-start;">Filter by author:</div>
         <div on:click={e => {nameFilter = false;}} class:selected={!nameFilter}>all</div>
         {#each getInitials(filteredData) as i}
@@ -529,11 +529,12 @@
                     {#if d[a]}<div class="chip {a}">{a}</div>{/if}
                 {/each}
         <!-- </div>--> 
-        </summary>
-            {#if $params.admin && $params.logged_in}
-                <button style="font-size: 1.2em; margin-bottom: 0.2em;" on:click={e => {$params.editItem(d)}}>Edit item</button>
-                <button style="font-size: 1.2em; margin-bottom: 0.2em;" on:click={e => {$params.deleteItem(d)}}>Delete item</button>
+         {#if $path == '/admin' && $params.logged_in}
+                <button style="margin-bottom: 0.2em;" on:click={e => {$params.editItem(d)}}>Edit item</button>
+                <button style="margin-bottom: 0.2em;" on:click={e => {$params.deleteItem(d)}}>Delete item</button>
             {/if}
+        </summary>
+            
             <!--{#if d.annotation}
                 {highlightMatch(d.annotation) || ''}
             {/if}-->
