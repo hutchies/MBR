@@ -30,7 +30,7 @@ jobs:
           remote_host: ${{ secrets.SERVER_HOST }}
           remote_user: ${{ secrets.SERVER_USER }}
           remote_key: ${{ secrets.SERVER_SSH_KEY }}
-          path: "build/"
+          path: "dist/"
           remote_path: "/var/www/${{ secrets.APP_FOLDER }}/"
           switches: "-az --delete"
           pre_cmd: |
