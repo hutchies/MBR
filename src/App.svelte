@@ -81,7 +81,7 @@
 <svelte:head>
     <title>Musical Borrowing & Reworking: an annotated bibliography</title>
 </svelte:head>
-    <div id="header">
+    <div id="header" class="noprint">
         <h1>Musical Borrowing and Reworking: an annotated bibliography</h1>
         <div class="top">
             <div class="nav">
@@ -94,7 +94,7 @@
         </div>
         
     </div>
-    <hr />
+    <hr class="noprint" />
     {#if $path == '/admin' || $path == '/browse' || resolve($path, /(record|search)\/(.+)/)}
         {#if $path == '/admin'}
                 <AdminView />
@@ -156,6 +156,12 @@
         flex-direction: column;
         align-items: flex-start;
         height: calc(100vh - 16px);
+    }
+
+    @media print {
+         :global(#app) {
+            height: auto;
+         }
     }
 
     hr {

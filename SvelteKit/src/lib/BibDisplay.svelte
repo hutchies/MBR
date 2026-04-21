@@ -484,6 +484,7 @@
         padding: 0.5em 0.5em 0;
         margin: 0.2em;
         background-color: ivory;
+        break-inside: avoid;
     }
 
     details[open].bib {

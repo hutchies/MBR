@@ -39,3 +39,13 @@ h3 {
 #app {
   margin: 0 auto;
 }
+
+.printonly {
+  display: none;
+}
+
+@media print {
+  .noprint { display: none; }
+  .printonly {display: block; }
+
+}

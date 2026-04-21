@@ -299,6 +299,20 @@
     $: filterByName(dataByName, filteredData, nameFilter)
     $: paginatedData = paginate({ items: dataByName, pageSize, currentPage })
 
+    let savedPD;
+
+    window.addEventListener('beforeprint', () => {
+        $params.printing = true;
+        savedPD = paginatedData;
+        paginatedData = dataByName;
+    })
+
+     window.addEventListener('afterprint', () => {
+        
+        if(savedPD) paginatedData = savedPD;
+        $params.printing = false;
+    })
+
     function nameStartsWith(d, n){
         if(!n) return true;
         let norm = baseForm(d.author);
@@ -410,7 +424,7 @@
 
 </script>
 
-<details open class="filters">
+<details open class="filters noprint">
     <summary>Filter/search records:</summary>
         <div class="form">
             <div class="input_block">
@@ -503,6 +517,7 @@
                 <li>The syntax <code>record:X</code> selects a specific record by its internal reference number. This is used to make it easy to send links to a specific record.</li>
             </ol>
             </details>
+            
         {/if}
     
     <hr />
@@ -517,16 +532,16 @@
 </details>
 
 
-<hr />
+<hr class="noprint"/>
 <div class="main_list">
     {#each paginatedData as d}
-        <details class="bib" open={specificRecord == d.record} on:click={e => {console.log(getDate(d.citation, true))}}><summary>
+        <details class="bib" open={specificRecord == d.record || $params.printing}><summary>
             <span bind:this={sourceElements[d.record]}><span class="author">{@html highlightMatch(d.author, 'author')}{#if !d.author.endsWith('.')}.{/if} </span>
                 {@html highlightMatch(d.citation, 'citation')}
             </span>
             <!--<div class="chips">--> 
                 {#each possibleAtts as a}
-                    {#if d[a]}<div class="chip {a}">{a}</div>{/if}
+                    {#if d[a] && !$params.printing}<div class="chip {a}">{a}</div>{/if}
                 {/each}
         <!-- </div>--> 
          {#if $path == '/admin' && $params.logged_in}
@@ -551,7 +566,7 @@
                     </div>
                 {/if}
             {/each}
-            <div style="margin-bottom: 1em; display: flex; gap: 1em;">
+            <div style="margin-bottom: 1em; display: flex; gap: 1em; {$params.printing ? "display: none;" : ""}">
                 <div class="chip record chip_details" style="cursor: pointer;" on:click={e => {exportLink(d.record)}}>
                     {#if copiedToClipboard == d.record}
                         Link copied to clipboard
@@ -693,6 +708,17 @@
     }
     details.bib > summary::-webkit-details-marker {
         display: none;
+    }
+
+    @media print {
+        details.bib, details[open].bib, details[open].bib summary, details.bib > summary {
+            border: none;
+            background-color: unset;
+        }
+        
+        details[open].bib {
+            border-bottom: 1px solid black;
+        }
     }
 
     .initials_list {
