@@ -3,7 +3,7 @@
 
     import Dialog from "./Dialog.svelte";
     import MultiSelect from 'svelte-multiselect';
-    import { login, pb } from "./pb";
+    import { login, loginOTP, pb } from "./pb";
     import { data, tags as tagsList, contributors as contribList, params} from "./shared.svelte";
     import { onMount } from "svelte";
     import ListEdit from "./ListEdit.svelte";
@@ -16,17 +16,18 @@
     let user = '';
     let pwd = '';
     
-    let logging_in = false;
+    let working = false;
     
     async function logMeIn(){
         try{
-            logging_in = true;
-            await login(user, pwd);
+            working = true;
+            //await login(user, pwd);
+            await loginOTP(loginRequest.req, pwd);
             $params.logged_in = true;
         }catch(e){
             error = e.toString();
         }
-        logging_in = false;
+        working = false;
     }
 
     let author, citation, contributors, annotation, works, sources, tags;
@@ -145,6 +146,18 @@
     console.log($contribList)
 
     let result = ''
+    let loginRequest = {
+        email: false,
+        req: false
+    }
+
+    async function sendRequest(email){
+        
+        loginRequest.email = email;
+        working = true;
+        loginRequest.req = await pb.collection('mbr_users').requestOTP(email);
+        working = false;
+    }
 
     onMount(() => {
         try{
@@ -171,6 +184,19 @@
         }
     })
 
+    function next(){
+        if(OTPsent(user)){
+            logMeIn();
+        }else{
+            sendRequest(user);
+        }
+    }
+
+    function OTPsent(email){
+        if(user == loginRequest.email && loginRequest.req) return true;
+        return false;
+    }
+
 </script>
 <div class="admin">
     <div>Admin mode</div>
@@ -178,27 +204,38 @@
 </div>
 {#if !$params.logged_in}
         <Dialog name="Log in" showHandle={true}>
-            <b>You must log in to access editing tools.</b>
-            <form on:submit|preventDefault={logMeIn}>
+            {#if !OTPsent(user, loginRequest)}
+                <b>You must log in to access editing tools.</b>
+                Enter a registered email address and you will receive a one-time password by email.
+            {:else}
+                Enter the password 
+            {/if}
+            <form on:submit|preventDefault={next}>
                 <table>
                     <tbody>
                         <tr>
-                            <td>Username:</td>
+                            <td>Email address:</td>
                             <td><input type="text" bind:value={user} /></td>
                         </tr>
-                        <tr>
-                            <td>
-                                Password:
-                            </td>
-                            <td>
-                                <input type="password" bind:value={pwd} />
-                            </td>
-                        </tr>
+                        {#if OTPsent(user, loginRequest)}
+                            <tr>
+                                <td>
+                                    Password:
+                                </td>
+                                <td>
+                                    <input type="password" bind:value={pwd} />
+                                </td>
+                            </tr>
+                        {/if}
                     </tbody>
                 </table>
                 <div style="width: 100%; text-align: center;">
-                    <button disabled={logging_in}>
-                        {logging_in ? 'Logging in...' : 'Log in'}
+                    <button disabled={working || OTPsent(user, loginRequest) && !pwd}>
+                        {#if OTPsent(user, loginRequest)}
+                            {working ? 'Logging in...' : 'Log in'}
+                        {:else}
+                            Send new password to email address
+                        {/if}
                     </button>
                     {#if error}<div>{error}</div>{/if}
                 </div>

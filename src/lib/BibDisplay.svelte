@@ -350,6 +350,7 @@
         let plain = sourceElements[d.record]?.innerText || sourceElements[d.record]?.textContent;
         let p = new URLSearchParams();
         p.set('q', plain);
+        //console.log(plain);
         window.open(`https://scholar.google.com/scholar?${p.toString()}`, '_blank');
     }
 
@@ -446,7 +447,7 @@
     <div class="form">
         <div class="input_block">
             Search records: 
-            <input style="width: 20em;" bind:value={tempFT} on:change={e => {fullText = tempFT}}/>
+            <input style="width: 20em;" bind:value={tempFT} on:change={e => {fullText = tempFT; nameFilter = false;}}/>
         </div>
         <div class="input_block">
             Type of search:
@@ -457,7 +458,7 @@
             </select>
         </div>
         
-        <button on:click={e => {fullText = tempFT;}}>Search</button>
+        <button on:click={e => {fullText = tempFT; nameFilter = false;}}>Search</button>
         {#if fullText}
             {#if searchError}
                 <span style="color: red;">Incorrect search syntax: check the rules for 'Advanced search'</span>
@@ -504,9 +505,11 @@
 <hr />
 <div class="main_list">
     {#each paginatedData as d}
-        <details class="bib" open={specificRecord == d.record} on:click={e => {console.log(getDate(d.citation, true))}}><summary bind:this={sourceElements[d.record]}>
-            <span class="author">{@html highlightMatch(d.author, 'author')}{#if !d.author.endsWith('.')}.{/if} </span>
-            {@html highlightMatch(d.citation, 'citation')}
+        <details class="bib" open={specificRecord == d.record} on:click={e => {console.log(getDate(d.citation, true))}}><summary>
+            <span bind:this={sourceElements[d.record]}>
+                <span class="author">{@html highlightMatch(d.author, 'author')}{#if !d.author.endsWith('.')}.{/if} </span>
+                {@html highlightMatch(d.citation, 'citation')}
+            </span>
         <!--<div class="chips">--> 
                 {#each possibleAtts as a}
                     {#if d[a]}<div class="chip {a}">{a}</div>{/if}
@@ -581,6 +584,7 @@
     .main_list {
         flex-grow: 1;
         overflow-y: auto;
+        width: 100%;
     }
 
     .chips {
@@ -606,6 +610,7 @@
         background-color: black;
         font-family: sans-serif;
         font-size: 0.8em;
+        font-weight: bold;
         border-radius: 5px;
         margin-left: 5px;
     }

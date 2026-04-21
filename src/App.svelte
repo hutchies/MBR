@@ -53,7 +53,7 @@
         <h1>Musical Borrowing and Reworking: an annotated bibliography</h1>
         <div class="attribution">
             <div>
-                Data from the <a href="https://web.archive.org/web/20250507173203/https://chmtl.indiana.edu/borrowing/">CHTML Musical Borrowing & Reworking project</a>. 
+                Data from the <a href="https://web.archive.org/web/20250507173203/https://chmtl.indiana.edu/borrowing/">CHMTL Musical Borrowing & Reworking project</a>. 
             </div>
             <div>
                 Subject to a <a href="https://creativecommons.org/licenses/by/4.0/">Creative Commons Attribution 4.0 International License</a>

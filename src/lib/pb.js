@@ -24,8 +24,12 @@ function getUsername(){
 }
 
 export async function login(user, pwd){
-    if(pb.authStore && pb.authStore.isValid) pb.authStore.clear();
+    //if(pb.authStore && pb.authStore.isValid) pb.authStore.clear();
     await pb.collection('_superusers').authWithPassword(user, pwd);
+}
+
+export async function loginOTP(req, pwd){
+    let authData = await pb.collection('mbr_users').authWithOTP(req.otpId, pwd);
 }
 
 export function amAdmin(){
