@@ -135,7 +135,7 @@
 <style>
 
     h1 {
-        font-size: 1.7em;
+        font-size: 1.4em;
         font-family: sans-serif;
         margin-top: 0.2em;
         margin-bottom: 0.2em;
@@ -179,7 +179,7 @@
         flex-wrap: wrap;
         gap: 1vmin;
         font-family: sans-serif;
-        font-size: 1.2rem;
+        font-size: 1.2em;
     }
 
     .nav > a {
