@@ -1,6 +1,6 @@
 import PocketBase from 'pocketbase';
 
-const PB_URL = 'https://hutchies.pockethost.io/'; // 'http://127.0.0.1:8090';
+const PB_URL = 'https://hutchies.cc/'; //'https://hutchies.pockethost.io/'; // 'http://127.0.0.1:8090';
 const PB_USER = 'test@gmail.com'; // Soon make this individual by username
 const PB_PWD = 'test';
 

@@ -267,6 +267,6 @@
 
     table,tr,td,th {
         border: none;
-    }
+    } 
 
 </style>

@@ -10,6 +10,36 @@
 
     //let data = localData;
 
+    async function updateDB() {
+        let promises = [];
+
+        //const batch = pb.createBatch();
+
+
+        let count = 0;
+        for(let d of $data){
+            try{
+                let result = await pb.collection('borrowing').create({
+                    ...d
+                });
+                count++;
+                console.log(`Completed ${count} of ${$data.length}`);
+            }catch(e){
+                console.log(e);
+            }
+            
+        }
+        //console.log(batch);
+       /* try{
+            let result = await batch.send();
+            alert('db updated');
+        }catch(e){
+            console.log('Error!', e)
+        }*/
+        
+        
+    }
+
      async function loadData(){
         try{
             console.log(`deleted=false && updated>'${localDataLastUpdated}'`);
