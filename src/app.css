@@ -1,35 +1,91 @@
 :root {
-  /*font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;*/
-
-  color: #213547;
-  background-color: #ffffff;
-
+  font-family: Georgia, "Times New Roman", serif;
+  color: #2d2924;
+  background: #f7f2e8;
+  font-size: 17px;
+  line-height: 1.55;
   text-rendering: optimizeLegibility;
-  /*-webkit-font-smoothing: antialiased;
+  -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  -webkit-text-size-adjust: 100%;*/
+  -webkit-text-size-adjust: 100%;
 }
 
+* {
+  box-sizing: border-box;
+}
 
-
+body {
+  margin: 0;
+  min-width: 320px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0) 22rem),
+    #f7f2e8;
+}
 
 h1 {
-  font-size: 1.4em;
-  font-family: sans-serif;
-  line-height: 1.1;
+  font-family: "Iowan Old Style", Georgia, "Times New Roman", serif;
+  font-size: clamp(1.7rem, 4vw, 2.8rem);
+  font-weight: 500;
+  line-height: 1.08;
 }
 
-h2, h3 {
-  font-family: sans-serif;
+h2,
+h3 {
+  font-family: "Iowan Old Style", Georgia, "Times New Roman", serif;
+  color: #4b2519;
 }
 
 h2 {
-  font-size: 1.2em;
+  font-size: 1.5rem;
 }
 
 h3 {
-  font-size: 1.1em;
+  font-size: 1.18rem;
+}
 
+a {
+  color: #8b3f2a;
+  text-underline-offset: 0.16em;
+}
+
+a:hover {
+  color: #5d2b1f;
+}
+
+button,
+select,
+input {
+  font: inherit;
+}
+
+button,
+select,
+input[type="text"] {
+  border: 1px solid #c9bca8;
+  border-radius: 6px;
+}
+
+button {
+  background: #6c3526;
+  color: #fffaf1;
+  padding: 0.42rem 0.72rem;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #55271d;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+select,
+input[type="text"] {
+  background: #fffdf8;
+  color: #2d2924;
+  padding: 0.38rem 0.5rem;
 }
 
 .card {
@@ -45,7 +101,54 @@ h3 {
 }
 
 @media print {
-  .noprint { display: none; }
-  .printonly {display: block; }
+  @page {
+    margin: 0.7in;
+  }
 
+  :root {
+    color: #000;
+    background: #fff;
+    font-size: 12pt;
+    line-height: 1.35;
+  }
+
+  *,
+  *::before,
+  *::after {
+    background: transparent !important;
+    box-shadow: none !important;
+    color: #000 !important;
+    text-shadow: none !important;
+  }
+
+  body {
+    background: #fff !important;
+    min-width: 0;
+  }
+
+  .noprint {
+    display: none !important;
+  }
+
+  #header,
+  .masthead,
+  .nav,
+  .top {
+    display: none !important;
+  }
+
+  .printonly {
+    display: block;
+  }
+
+  a {
+    color: #000;
+    text-decoration: none;
+  }
+
+  button,
+  input,
+  select {
+    border-color: #000;
+  }
 }

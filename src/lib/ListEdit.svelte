@@ -44,7 +44,7 @@
 
 <div style="display: flex; gap: 5px; flex-wrap: wrap;">
     {#each value as v, i (i)}
-        <div bind:this={elements[i]} contenteditable bind:innerHTML={v} on:keydown={e => {possiblySplitOrJoin(e, i)}}></div>
+        <div bind:this={elements[i]} role="textbox" aria-multiline="true" tabindex="0" contenteditable bind:innerHTML={v} on:keydown={e => {possiblySplitOrJoin(e, i)}}></div>
     {/each}
     {#if elements[value.length - 1] && elements[value.length - 1].innerText.trim() != ''}
         <button on:click={e => {value = [...value, '']}}>+</button>

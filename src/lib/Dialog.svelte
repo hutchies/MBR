@@ -18,7 +18,7 @@
     <div use:draggable={prefs} class="dialog_inner" style="flex: 1; justify-content: space-evenly;">
         <div style="display: flex; flex-direction: column; gap: 10px; max-height: 80vh; padding-bottom: 1vmin;">
                 <div style="display: flex; gap: 1vmin; justify-content: space-between;">
-                    {#if showClose}<img class="close" on:click={e => {dispatch('close')}} src="close.svg" />{/if}
+                    {#if showClose}<button class="close" type="button" aria-label="Close dialog" on:click={e => {dispatch('close')}}><img src="close.svg" alt="" /></button>{/if}
                     {#if showHandle}
                     <div class="handle">
                         {@html name}
@@ -32,15 +32,21 @@
 </div>
 <style>
     .close {
-        max-width: 3vmin;
-        max-height: 3vmin;
+        width: 2rem;
+        height: 2rem;
         margin-left: 0.5vmin;
         margin-bottom: 0.5vmin;
-        filter: invert(0.9);
+        padding: 0;
+        border: 0;
+        border-radius: 999px;
+        background: transparent;
+        cursor: pointer;
     }
 
-    .hidden {
-        display: none;
+    .close img {
+        width: 100%;
+        height: 100%;
+        filter: invert(0.9);
     }
 
     .handle {
