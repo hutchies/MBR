@@ -323,7 +323,7 @@
     }
 
     .edit_scroll {
-        max-height: 70vh;
+        max-height: 60vh;
         overflow-y: auto;
         padding-right: 0.35rem;
     }

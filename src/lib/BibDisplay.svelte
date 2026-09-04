@@ -124,7 +124,10 @@
     function filterByOptions(d, t, c, ft){
         if(t && d.tags && !d.tags.includes(t)) return false;
         if(c &&  (!d.contributors || !d.contributors.includes(c))) return false;
-        if(dateStart || dateEnd){
+        // Only apply the year filter once the user has actually narrowed the range.
+        // dateStart/dateEnd are seeded to the data bounds on load, so testing them
+        // directly meant every citation without a parseable year was always hidden.
+        if(dateFilterActive){
             let y = getDate(d.citation);
             let start = Math.min(parseInt(dateStart), parseInt(dateEnd));
             let end = Math.max(parseInt(dateStart), parseInt(dateEnd));
@@ -319,7 +322,7 @@
 
     
 
-    function filterData(fd, d, ct, cc, ft, cs, css, ds, de, edo, sdo){
+    function filterData(fd, d, ct, cc, ft, cs, css, ds, de, edo, sdo, dfa){
         //console.log('filtering data', $data);
         filteredData = $data
             .filter(d => $path == '/admin' && showDeletedOnly ? d.deleted : !d.deleted)
@@ -336,7 +339,7 @@
         currentPage = 1;
     }
 
-    $: filterData(filteredData, $data, currentTag, currentContributor, fullText, currentSort, currentSearch, dateStart, dateEnd, exactPhrase, showDeletedOnly)
+    $: filterData(filteredData, $data, currentTag, currentContributor, fullText, currentSort, currentSearch, dateStart, dateEnd, exactPhrase, showDeletedOnly, dateFilterActive)
     let paginatedData = [];
     let currentPage = 1;
     let pageSize = 50;

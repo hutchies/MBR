@@ -1,3 +1,4 @@
+// @ts-nocheck
 import PocketBase from 'pocketbase';
 
 const PB_URL = 'https://hutchies.cc/';
