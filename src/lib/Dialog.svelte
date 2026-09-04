@@ -16,9 +16,9 @@
 
 <div class="dialog_outer" >
     <div use:draggable={prefs} class="dialog_inner" style="flex: 1; justify-content: space-evenly;">
-        <div style="display: flex; flex-direction: column; gap: 10px; max-height: 80vh; padding-bottom: 1vmin;">
-                <div style="display: flex; gap: 1vmin; justify-content: space-between;">
-                    {#if showClose}<button class="close" type="button" aria-label="Close dialog" on:click={e => {dispatch('close')}}><img src="close.svg" alt="" /></button>{/if}
+        <div style="display: flex; flex-direction: column; gap: 10px; max-height: 80vh; padding-bottom: 0.5rem;">
+                <div style="display: flex; gap: 0.5rem; justify-content: space-between;">
+                    {#if showClose}<button class="close" type="button" aria-label="Close dialog" on:click={e => {dispatch('close')}}><img src="/close.svg" alt="" /></button>{/if}
                     {#if showHandle}
                     <div class="handle">
                         {@html name}
@@ -34,8 +34,8 @@
     .close {
         width: 2rem;
         height: 2rem;
-        margin-left: 0.5vmin;
-        margin-bottom: 0.5vmin;
+        margin-left: 0.35rem;
+        margin-bottom: 0.35rem;
         padding: 0;
         border: 0;
         border-radius: 999px;
@@ -52,12 +52,13 @@
     .handle {
         width: 100%;
         background-color: white;
-        height: 3vmin;
+        min-height: 2rem;
+        padding: 0.25rem 0.5rem;
         display: flex;
         color: black;
         align-items: center;
         justify-content: center;
-        border-radius: 1vmin;
+        border-radius: 0.4rem;
     }
 
     .dialog_outer {
@@ -67,7 +68,7 @@
         top: 50%;
         display: flex;
         flex-direction: column;
-        gap: 5vmin;
+        gap: 1.5rem;
         z-index: 300;
         max-width: 80vw;
         max-height: 80vh;
@@ -78,7 +79,7 @@
 
     .dialog_inner {
 
-        padding: 2vmin;
+        padding: 1rem;
         /* padding-bottom: 1vmin; */
         height: fit-content;
         width: fit-content;
@@ -100,6 +101,18 @@
         gap: 10px;
     }
 
+    @media (max-width: 720px) {
+        .dialog_outer {
+            max-width: 96vw;
+            max-height: 92vh;
+        }
 
+        .dialog_inner {
+            min-width: 0;
+            width: 92vw;
+            max-height: 88vh;
+            border-radius: 16px;
+        }
+    }
 
 </style>

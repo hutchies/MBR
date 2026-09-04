@@ -745,6 +745,12 @@
 
     let sourceElements = {};
 
+    // Filters open by default on wide screens only - on a phone they otherwise
+    // fill the viewport and push the results below the fold. Sampled once at load
+    // on purpose: re-reading on resize would slam the panel shut on someone who
+    // deliberately opened it, and bind:open fights the write anyway.
+    let filtersOpen = window.matchMedia('(min-width: 721px)').matches;
+
 </script>
 
 {#if indexMode}
@@ -899,29 +905,11 @@
         {/if}
     </main>
 {:else}
-<details open class="filters noprint">
+<details bind:open={filtersOpen} class="filters noprint">
     <summary>
         <span class="summary_label">
             <span class="summary_chevron" aria-hidden="true">›</span>
             Search and filters
-        </span>
-        <span class="summary_tools">
-            <span class="page_summary">{pageSummary}</span>
-            {#if pageSize < dataByName.length}
-                <span class="compact_pager" aria-label="Pagination">
-                    <button type="button" aria-label="Previous page" disabled={currentPage <= 1} on:click={(e) => {e.preventDefault(); gotoPage(currentPage - 1)}}>‹</button>
-                    <label>
-                        Page
-                        <select value={currentPage} on:click={(e) => e.preventDefault()} on:change={e => gotoPage(e.currentTarget.value)}>
-                            {#each pageOptions as p}
-                                <option value={p}>{p}</option>
-                            {/each}
-                        </select>
-                        of {pageCount}
-                    </label>
-                    <button type="button" aria-label="Next page" disabled={currentPage >= pageCount} on:click={(e) => {e.preventDefault(); gotoPage(currentPage + 1)}}>›</button>
-                </span>
-            {/if}
         </span>
     </summary>
         <div class="form controls">
@@ -1063,6 +1051,25 @@
 	        {/each}
 	    </div>
 	</details>
+
+	<div class="list_bar noprint">
+	    <span class="page_summary">{pageSummary}</span>
+	    {#if pageSize < dataByName.length}
+	        <span class="compact_pager" aria-label="Pagination">
+	            <button type="button" aria-label="Previous page" disabled={currentPage <= 1} on:click={() => gotoPage(currentPage - 1)}>‹</button>
+	            <label>
+	                Page
+	                <select value={currentPage} on:change={e => gotoPage(e.currentTarget.value)}>
+	                    {#each pageOptions as p}
+	                        <option value={p}>{p}</option>
+	                    {/each}
+	                </select>
+	                of {pageCount}
+	            </label>
+	            <button type="button" aria-label="Next page" disabled={currentPage >= pageCount} on:click={() => gotoPage(currentPage + 1)}>›</button>
+	        </span>
+	    {/if}
+	</div>
 
 	<div class="main_list">
 	<svelte:boundary>
@@ -1555,14 +1562,22 @@
         background: #f3e5d2;
     }
 
-    .summary_tools {
-        display: inline-flex;
+    .list_bar {
+        display: flex;
+        flex-wrap: wrap;
         align-items: center;
-        justify-content: flex-end;
+        justify-content: space-between;
         gap: 0.55rem;
+        width: 100%;
+        padding: 0.3rem 0 0.15rem;
         color: #6f6357;
-        text-transform: none;
-        cursor: default;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        font-size: 0.78rem;
+    }
+
+    .list_bar .page_summary {
+        min-width: 0;
+        text-align: left;
     }
 
     .clear_button {
@@ -2192,7 +2207,33 @@
         font-weight: bold;
     }
 
+    @media (max-width: 1024px) and (min-width: 721px) {
+        .input_block {
+            flex: 1 1 40%;
+        }
+
+        .input_block.compact {
+            flex: 0 1 auto;
+        }
+    }
+
     @media (max-width: 720px) {
+        .list_bar {
+            justify-content: space-between;
+        }
+
+        /* 44px minimum touch targets */
+        .compact_pager button,
+        .compact_pager select,
+        .initials_list button {
+            min-height: 2.6rem;
+        }
+
+        .compact_pager button,
+        .initials_list button {
+            min-width: 2.6rem;
+        }
+
         .filters {
             padding: 0.65rem;
             max-height: 75vh;
@@ -2238,12 +2279,6 @@
         .filters > summary {
             align-items: flex-start;
             flex-direction: column;
-        }
-
-        .summary_tools {
-            align-items: flex-start;
-            flex-direction: column;
-            gap: 0.35rem;
         }
 
         .index_header {

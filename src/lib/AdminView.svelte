@@ -286,13 +286,13 @@
     }
 
     .admin_form {
-        width: min(68vw, 820px);
+        width: min(100%, 820px);
         color: #fffaf1;
         font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
 
     .login_form {
-        width: min(24rem, 78vw);
+        width: min(24rem, 100%);
     }
 
     .form_intro {
@@ -399,7 +399,7 @@
         }
 
         .admin_form {
-            width: 82vw;
+            width: 100%;
         }
     }
 

@@ -393,6 +393,22 @@
         margin: 0 0 1rem;
     }
 
+    /* Tablet: 7 nav items plus the masthead don't fit on one line. */
+    @media (max-width: 1024px) and (min-width: 701px) {
+        #header.compact_browse {
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .compact_browse .masthead {
+            text-align: center;
+        }
+
+        .compact_browse .top {
+            width: 100%;
+        }
+    }
+
     @media (max-width: 700px) {
         :global(#app) {
             padding: 0 0.7rem;
@@ -402,10 +418,47 @@
             padding-top: 1.25rem;
         }
 
+        /* Full-bleed banner has to match the reduced #app padding, or it
+           sticks 0.4rem out each side and the page scrolls sideways. */
+        .admin_mode_banner {
+            margin: 0 -0.7rem;
+            padding-left: 0.7rem;
+            padding-right: 0.7rem;
+        }
+
         #header.compact_browse {
-            align-items: center;
+            /* stretch, not center: centring shrink-wraps .top to its content
+               width, so the nav overflows the page instead of scrolling. */
+            align-items: stretch;
             flex-direction: column;
             gap: 0.35rem;
+        }
+
+        .top {
+            width: 100%;
+            max-width: 100%;
+            min-width: 0;
+        }
+
+        /* One scrollable strip beats three wrapped rows on a 375px screen. */
+        .nav {
+            flex-wrap: nowrap;
+            justify-content: flex-start;
+            min-width: 0;
+            overflow-x: auto;
+            scrollbar-width: none;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .nav::-webkit-scrollbar {
+            display: none;
+        }
+
+        .nav > a {
+            flex: 0 0 auto;
+            display: inline-flex;
+            align-items: center;
+            min-height: 2.6rem; /* 44px */
         }
 
         .attribution {
