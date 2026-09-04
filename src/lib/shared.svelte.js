@@ -1,11 +1,12 @@
 import { derived, writable } from 'svelte/store';
+import { pb } from './pb.js';
 
 export let tags = ['General','Monophony to 1300','Polyphony to 1300','1300s','1400s','1500s','1600s','1700s','1800s','1900s','2000s','Jazz','Popular','Film']
 //export let data = $state([...localData]);
 export let data = writable([]);
 export let localDataLoaded = writable(false);
 export let params = writable({
-    logged_in: false,
+    logged_in: pb.authStore.isValid, // SDK persists auth in localStorage; don't ask again on reload
     editRecord: false,
     admin: false
 });

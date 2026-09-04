@@ -3,7 +3,7 @@
     import { onMount } from 'svelte';
     import BibDisplay from './lib/BibDisplay.svelte';
     //import { data as localData } from './lib/data.js';
-    import { login, pb } from './lib/pb.js';
+    import { pb } from './lib/pb.js';
     import AdminView from './lib/AdminView.svelte';
     import { data, localDataReady, params } from './lib/shared.svelte.js';
     import { localDataLastUpdated } from './lib/data_meta.js';
@@ -47,14 +47,13 @@
 	     async function loadData(){
         try{
             await localDataReady;
-            console.log(`deleted=false && updated>'${localDataLastUpdated}'`);
+            // Deletions are soft, so they must come down too - otherwise a record
+            // deleted after the bundled snapshot stays visible to every visitor forever.
             let remoteData = await pb.collection('borrowing').getFullList({
-                
-                filter: `deleted=false && updated>'${localDataLastUpdated}'`
+                filter: `updated>'${localDataLastUpdated}'`
             });
             $data = [...$data.filter(d => !remoteData.some(da => da.record == d.record)), ...remoteData];
             let loadEnd = performance.now();
-            console.log('synced with remote', data, remoteData);
             loaded = loadEnd - pageStartTime;
             if(!loaded) loaded = true;
         }catch(e){

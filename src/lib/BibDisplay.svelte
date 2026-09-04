@@ -100,7 +100,12 @@
         return text.trim();
     }
     
+    function escapeRegex(s){
+        return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
     function dumbQuotes(s){
+        if(!s) return '';
         s = s.replace(/”/g,"\"");
         s = s.replace(/“/g,"\"");
         s = s.replace(/“/g,"\"");
@@ -207,7 +212,7 @@
             // nested OR statement
             return t.any_of.some(e => andMatches(e, d, t.filter || filter));
         }
-        let re = baseForm(t.term).replaceAll(/\s+/g, ' ');
+        let re = escapeRegex(baseForm(t.term).replaceAll(/\s+/g, ' '));
         let f = t.filter || filter;
         if(['contributor','tag'].includes(f)){
             f = `${f}s`; // plural in db
@@ -253,7 +258,10 @@
         if(currentSearch != 'simple' && currentSearch != 'advanced' && currentSearch != where) return origText; // only the area you were looking
         
         if(currentSearch != 'advanced'){
-            bitsToHighlight = exactPhrase ? [{term: fullText}] : fullText.split(/\s+/).filter(Boolean).map(term => ({term}));
+            // Raw user input: escape it, or a stray bracket in a pasted citation kills the render.
+            bitsToHighlight = exactPhrase
+                ? [{term: escapeRegex(fullText)}]
+                : fullText.split(/\s+/).filter(Boolean).map(term => ({term: escapeRegex(term)}));
         }
         let text = origText;
         //le.log(bitsToHighlight)
@@ -262,7 +270,12 @@
         if(bits.length == 0) return origText;
         let bit = bits.map(b => `(${b.term})`).join('|');
         let t = baseForm(text);
-        let re = new RegExp(baseForm(bit), 'ig')
+        let re;
+        try{
+            re = new RegExp(baseForm(bit), 'ig');
+        }catch(e){
+            return origText; // never let highlighting take down the list
+        }
         let start = 0;
         let newString = '';
 
@@ -277,7 +290,7 @@
         //return t.replace(re, (match, offset, string) => `<span style="background-color: yellow;">${origText.slice(offset, offset + match.length)}</span>`);
     }
 
-    let sortByAuthor = (a,b) => a.author.localeCompare(b.author);
+    let sortByAuthor = (a,b) => (a.author || '').localeCompare(b.author || '');
     let sortByDate = (a,b) => getDate(a.citation) - getDate(b.citation);
     let sortByDateReversed = (a,b) => getDate(b.citation) - getDate(a.citation);
 
@@ -618,8 +631,8 @@
     function getInitials(data){
         let i = [];
         for(let d of data){
-            let n = baseForm(d.author)[0].toUpperCase();
-            if(!i.includes(n)){
+            let n = baseForm(d.author)[0]?.toUpperCase();
+            if(n && !i.includes(n)){
                 i.push(n)
             }
         }
@@ -649,7 +662,7 @@
         let rich = sourceElements[d.record]?.innerHTML;
         if(!rich) return;
         let plain = sourceElements[d.record]?.innerText || sourceElements[d.record]?.textContent;
-        if(ClipboardItem.supports('text/html')){
+        if(typeof ClipboardItem !== 'undefined' && ClipboardItem.supports?.('text/html')){
             let item = new ClipboardItem({
                 'text/html': new Blob([rich], {type: 'text/html'}),
                 'text/plain': new Blob([plain], {type: 'text/plain'})
@@ -822,7 +835,7 @@
                         {#each indexPreview.records as record}
                             <details class="preview_record">
                                 <summary>
-                                    <span class="author">{@html record.author}{#if !record.author.endsWith('.')}.{/if}</span>
+                                    {#if record.author}<span class="author">{@html record.author}{#if !record.author.endsWith('.')}.{/if}</span>{/if}
                                     {@html record.citation}
                                 </summary>
                                 {#each possibleAtts as a}
@@ -855,7 +868,7 @@
                 <button type="button" on:click={() => window.print()}>Print record</button>
             </div>
             <article class="detail_record">
-                <h2><span class="author">{@html detailRecord.author}{#if !detailRecord.author.endsWith('.')}.{/if}</span> {@html detailRecord.citation}</h2>
+                <h2>{#if detailRecord.author}<span class="author">{@html detailRecord.author}{#if !detailRecord.author.endsWith('.')}.{/if}</span>{/if} {@html detailRecord.citation}</h2>
                 {#each possibleAtts as a}
                     {#if detailRecord[a]}
                         <section class="record_section">
@@ -1049,10 +1062,11 @@
 	</details>
 
 	<div class="main_list">
+	<svelte:boundary>
     {#if dataByName.length}
     {#each paginatedData as d}
 		        <details class="bib" open={specificRecord == d.record || $params.printing}><summary>
-		            <span class="citation_text" bind:this={sourceElements[d.record]}><span class="author">{@html highlightMatch(d.author, 'author')}{#if !d.author.endsWith('.')}.{/if} </span>
+		            <span class="citation_text" bind:this={sourceElements[d.record]}>{#if d.author}<span class="author">{@html highlightMatch(d.author, 'author')}{#if !d.author.endsWith('.')}.{/if} </span>{/if}
 		                {@html highlightMatch(d.citation, 'citation')}
 		            </span>
 	            <span class="record_badges">
@@ -1123,6 +1137,14 @@
             <button type="button" on:click={clearFilters}>Clear filters</button>
         </div>
     {/if}
+    {#snippet failed(error, reset)}
+        <div class="empty_state">
+            <h2>Something went wrong displaying these records</h2>
+            <p>{error?.message || error}</p>
+            <button type="button" on:click={reset}>Try again</button>
+        </div>
+    {/snippet}
+    </svelte:boundary>
 </div>
 {#if pageSize < dataByName.length}
     <hr />

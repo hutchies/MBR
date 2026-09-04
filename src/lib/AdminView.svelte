@@ -44,23 +44,21 @@
 
     resetNew();
 
-    function cleanupItem(rec){
-        if(rec.works){
-            rec.works = rec.works.map(w => w.trim()).filter(w => w && w != '<br>');
+    function normalise(rec){
+        for(let k of ['works', 'sources']){
+            if(Array.isArray(rec[k])) rec[k] = rec[k].map(w => w.trim()).filter(w => w && w != '<br>');
         }
-        if(rec.sources){
-            rec.sources = rec.sources.map(w => w.trim()).filter(w => w && w != '<br>');
-        }
-        let toDelete = [];
-
-        for(let k of Object.keys(rec)){
-            if(!rec[k] || Array.isArray(rec[k]) && rec[k].length == 0) toDelete.push(k);
-        }
-        for(let k of toDelete){
-            delete rec[k];
-        }
-
         return rec;
+    }
+
+    // Only on create. On update the empty keys must survive, or clearing a field
+    // silently leaves the old value in the database.
+    function stripEmpty(rec){
+        let out = {};
+        for(let [k, v] of Object.entries(rec)){
+            if(v && !(Array.isArray(v) && v.length == 0)) out[k] = v;
+        }
+        return out;
     }
 
     $params.editItem = (d) =>{
@@ -83,9 +81,8 @@
     async function deleteItem(d){
         try{
             let orig = await pb.collection('borrowing').getFirstListItem(`record=${d.record}`);
-            orig.deleted = true;
-            await pb.collection('borrowing').update(orig.id, orig);
-            d.deleted = true;
+            await pb.collection('borrowing').update(orig.id, {deleted: true});
+            $data = $data.map(r => r.record == d.record ? {...r, deleted: true} : r);
             $params.editRecord = '';
             result = 'Record deleted';
             setTimeout(() => {result = ''}, 2000);
@@ -107,28 +104,21 @@
             tags
         };    
     
-        rec = cleanupItem(rec);
+        rec = normalise(rec);
 
         try{
             if($params.editRecord == 'new'){
                 rec.record = nextRecord;
-                await pb.collection('borrowing').create(rec);
+                let created = await pb.collection('borrowing').create(stripEmpty(rec));
+                rec.record = created.record;
                 if(!$data.some(d => d.record == rec.record)) $data = [...$data, rec];
-                // Add itself, trusting that the update mechanism will successfully ignore otherwise
                 result = 'Record added';
                 if($data.length) nextRecord = Math.max(...$data.map(d => d.record)) + 1;
             }else if($params.editRecord){
                 rec.record = $params.editRecord;
                 let orig = await pb.collection('borrowing').getFirstListItem(`record=${rec.record}`);
                 await pb.collection('borrowing').update(orig.id, rec);
-                let d = $data.find(d => d.record == rec.record);
-                if(d){
-                    $data = $data.filter(d => d.record != rec.record);
-                    $data = [...$data, d];
-                }else{
-                    console.log('Hmm, record not found... odd! Adding', rec);
-                    $data = [...$data, rec];
-                }
+                $data = [...$data.filter(d => d.record != rec.record), rec];
                 result = 'Record updated';
             }else{
                 console.log(`Shouldn't be able to do this!`)
@@ -161,7 +151,7 @@
                 console.log('db update', e);
                 if(e.action == 'create'){
                     let rec = $data.find(d => d.record == e.record.record);
-                    if(!rec) $data = [...data, {...e.record}];
+                    if(!rec) $data = [...$data, {...e.record}];
                 }else if(e.action == 'update'){
                     let rec = $data.find(d => d.record == e.record.record);
                     $data = [...$data.filter(d => d.record != e.record.record), e.record];
