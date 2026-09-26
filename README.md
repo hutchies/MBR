@@ -1,47 +1,46 @@
-# Svelte + Vite
+# Musical Borrowing and Reworking
 
-This template should help get you started developing with Svelte in Vite.
+Front end for *Musical Borrowing and Reworking: An Annotated Bibliography*, a
+Svelte 5 + Vite single-page app. The bibliography ships with the app as
+`src/lib/data.json` and is topped up at runtime with anything newer from the
+PocketBase server configured in `src/lib/pb.js`.
 
-## Recommended IDE Setup
+## Development
 
-[VS Code](https://code.visualstudio.com/) + [Svelte](https://marketplace.visualstudio.com/items?itemName=svelte.svelte-vscode).
-
-## Need an official Svelte framework?
-
-Check out [SvelteKit](https://github.com/sveltejs/kit#readme), which is also powered by Vite. Deploy anywhere with its serverless-first approach and adapt to various platforms, with out of the box support for TypeScript, SCSS, and Less, and easily-added support for mdsvex, GraphQL, PostCSS, Tailwind CSS, and more.
-
-## Technical considerations
-
-**Why use this over SvelteKit?**
-
-- It brings its own routing solution which might not be preferable for some users.
-- It is first and foremost a framework that just happens to use Vite under the hood, not a Vite app.
-
-This template contains as little as possible to get started with Vite + Svelte, while taking into account the developer experience with regards to HMR and intellisense. It demonstrates capabilities on par with the other `create-vite` templates and is a good starting point for beginners dipping their toes into a Vite + Svelte project.
-
-Should you later need the extended capabilities and extensibility provided by SvelteKit, the template has been structured similarly to SvelteKit so that it is easy to migrate.
-
-**Why `global.d.ts` instead of `compilerOptions.types` inside `jsconfig.json` or `tsconfig.json`?**
-
-Setting `compilerOptions.types` shuts out all other types not explicitly listed in the configuration. Using triple-slash references keeps the default TypeScript setting of accepting type information from the entire workspace, while also adding `svelte` and `vite/client` type information.
-
-**Why include `.vscode/extensions.json`?**
-
-Other templates indirectly recommend extensions via the README, but this file allows VS Code to prompt the user to install the recommended extension upon opening the project.
-
-**Why enable `checkJs` in the JS template?**
-
-It is likely that most cases of changing variable types in runtime are likely to be accidental, rather than deliberate. This provides advanced typechecking out of the box. Should you like to take advantage of the dynamically-typed nature of JavaScript, it is trivial to change the configuration.
-
-**Why is HMR not preserving my local component state?**
-
-HMR state preservation comes with a number of gotchas! It has been disabled by default in both `svelte-hmr` and `@sveltejs/vite-plugin-svelte` due to its often surprising behavior. You can read the details [here](https://github.com/sveltejs/svelte-hmr/tree/master/packages/svelte-hmr#preservation-of-local-state).
-
-If you have state that's important to retain within a component, consider creating an external store which would not be replaced by HMR.
-
-```js
-// store.js
-// An extremely simple external store
-import { writable } from 'svelte/store'
-export default writable(0)
+```sh
+npm ci
+npm run dev      # local dev server
+npm test         # unit tests (vitest)
+npm run build    # production build into dist/
 ```
+
+Pushes to `main` are tested, built and deployed by `.github/workflows/deploy.yml`.
+Other branches and pull requests run the tests and build via `test.yml`.
+
+## Layout
+
+| Path | What it is |
+|---|---|
+| `src/App.svelte` | Shell, navigation and routing (`elegua`) |
+| `src/lib/BibDisplay.svelte` | Browse, search, index pages and record pages |
+| `src/lib/AdminView.svelte` | Editor login, record editing and the suggestions queue (`/admin`) |
+| `src/Suggest.svelte` | Public "suggest an item" form (`/suggest`) |
+| `src/lib/search.js` | Search matching, date extraction and works/sources index helpers |
+| `src/lib/citation.js` | Citation parsing and RIS / BibTeX / Highwire meta export |
+| `src/lib/related.js` | "Related records" by shared works, sources and composers |
+| `src/lib/data.json` | Bundled snapshot of the bibliography |
+| `src/lib/data_meta.js` | Timestamp of that snapshot; newer server records are fetched on load |
+| `boolean.pegjs` | Advanced search grammar; run `npm run grammar` after editing to regenerate `src/lib/boolean.js` |
+| `pocketbase/` | Server schema migrations (see its README) |
+| `tests/` | Unit tests, including checks that run over the full bundled data |
+
+## Releasing
+
+Bump `version` in `package.json`; the footer shows it with the build date.
+
+## Refreshing the bundled data
+
+Replace `src/lib/data.json` with a fresh export of the `borrowing` collection and
+set `localDataLastUpdated` in `src/lib/data_meta.js` to the export time, so
+visitors only download records changed after it. `npm test` checks the whole
+file parses and exports cleanly.

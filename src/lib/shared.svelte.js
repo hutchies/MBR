@@ -12,7 +12,7 @@ export let params = writable({
 });
 export let contributors = derived(data, (data) => Array.from(new Set(data.filter(d => d.contributors).flatMap(d => d.contributors))));
 
-export const localDataReady = import('./data.js').then(({ data: localData }) => {
+export const localDataReady = import('./data.json').then(({ default: localData }) => {
     data.set([...localData]);
     localDataLoaded.set(true);
     return localData;
