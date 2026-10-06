@@ -1,9 +1,14 @@
 <script>
     // @ts-nocheck
 
-    //import { data } from '$lib/data.js';
     import { paginate, LightPaginationNav } from 'svelte-paginate'
     import { parse } from './boolean.js';
+    import {
+        SEARCH_FIELDS, allText, attributedIndexLabels, baseForm, canonicalIndexLabel, escapeRegex,
+        getDate, joinPossArray, matchesQuery, splitCreatorTitle, stripHtml
+    } from './search.js';
+    import { citationMeta, downloadText, recordsToBibTeX, recordsToRIS } from './citation.js';
+    import { buildRelatedIndex, relatedRecords } from './related.js';
     import { onMount } from "svelte";
     import { pb } from "./pb.js";
     import { tags, data, contributors, localDataLoaded, params} from './shared.svelte.js';
@@ -33,93 +38,7 @@
     //let tags = Array.from(new Set(data.filter(d => d.tags).flatMap(d => d.tags)));
     //let contributors = Array.from(new Set(data.filter(d => d.tags).flatMap(d => d.contributors)));
 
-    function getDate(c, log = false){
-        /*c = c.replaceAll('[', '');
-        c = c.replaceAll(']', '');
-        let d = c.match(/[^0-9](\d\d\d\d)(\.)?$/);
-        if(d && d[1]) return parseInt(d[1]);
-        d = c.match(/,\s(\d\d\d\d)$/);
-        if(d && d[1]) return parseInt(d[1]);
-        d = c.match(/(\d\d\d\d)\)/);
-        if(d && d[1]) return parseInt(d[1]);
-        d = c.match(/\((\d\d\d\d)/);
-        if(d && d[1]) return parseInt(d[1]);
-        d = c.match(/(\d\d)\d\d(\-|\/)(\d\d)((\.?$)|\))/);
-        if(d && d[1]) return parseInt(`${d[1]}${d[3]}`);
-        d = c.match(/\d\d\d\d(\-|\/)(\d\d\d\d)((\.?$)|\))/);
-        if(d && d[1]) return parseInt(d[1]);
-        
-        return -1;*/
-        let possible = [];
-        let origC = c;
-        c = c.replaceAll(/\"[^\"]+\"/g, ''); // Remove all quoted stuff
-        c = c.replaceAll(/\“[^\”]+\”/g, ''); // Remove all quoted stuff
-        c = c.replaceAll(/\'[^\'']+\'/g, ''); // Remove all quoted stuff
-        c = c.replaceAll(/\<em\>(.+?)\<\/em\>/g, ''); // Remove all quoted stuff
-        //if(log) console.log(c);
-        c = c.replaceAll(/(\d\d)\)\:\s*[0-9\-]+/g, '$1'); // Remove page refs
-        c = c.replaceAll(/[^0-9\-\/]+/g, ' ');
-        c = c.trim();
-        //if(log) console.log(c);
-        let d = [...c.matchAll(/(\d\d)\d\d(\-|\/)(\d\d)/g)];
-        if(log && d.length > 0 && parseInt(d[d.length - 1]) < 1500) console.log(d);
-        if(d.length > 0) possible = [{
-            index: d[d.length - 1].index,
-            text: c,
-            origC,
-            res: parseInt(`${d[d.length - 1][0]}${d[d.length - 1][2]}`)
-        }];
-        d = [...c.matchAll(/(\d\d\d)\d(\-|\/)(\d)/g)];
-        //if(log && d.length > 0 && parseInt(d[d.length - 1]) < 1500) console.log(d);
-        if(d.length > 0) possible = [{
-            index: d[d.length - 1].index,
-            text: c,
-            origC,
-            res: parseInt(`${d[d.length - 1][0]}${d[d.length - 1][2]}`)
-        }];
-        d = [...c.matchAll(/\d\d\d\d($|[^\-\/])/g)];
-        //if(log && d.length > 0 && parseInt(d[d.length - 1]) < 1500) console.log(d);
-        if(d.length > 0) possible = [{
-            index: d[d.length - 1].index,
-            text: c,
-            origC,
-            res: parseInt(d[d.length - 1])
-        }, ...possible];
-        if(possible.length > 0){
-            let max = Math.max(...possible.map(p => p.index));
-            return possible.find(p => p.index == max).res;
-        }
-        return -1;
-    }
-
-    function allText(d){
-        let text = '';
-        for(let a of ['author', 'citation', ...possibleAtts]){
-            if(d[a]) text += `${joinPossArray(d[a])} `;
-        }
-        return text.trim();
-    }
     
-    function escapeRegex(s){
-        return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    }
-
-    function dumbQuotes(s){
-        if(!s) return '';
-        s = s.replace(/”/g,"\"");
-        s = s.replace(/“/g,"\"");
-        s = s.replace(/“/g,"\"");
-        s = s.replace(/”/g,"\"");
-        s = s.replace(/‘/g,"'");
-        s = s.replace(/’/g,"'");
-        s = s.replace(/‘/g,"'");
-        s = s.replace(/’/g,"'");
-        return s;
-    }
-
-    function baseForm(s){
-        return dumbQuotes(s).normalize('NFD').replace(/[\u0300-\u036f]/g, "").toLowerCase()
-    }
 
     function filterByOptions(d, t, c, ft){
         if(t && d.tags && !d.tags.includes(t)) return false;
@@ -140,15 +59,9 @@
         return true;
     }
 
-    function joinPossArray(a){
-        if(!Array.isArray(a)) return a;
-        return a.join(' ');
-    }
-
     function searchMatches(d){
         bitsToHighlight = [];
         searchError = false;
-        let record = d.record;
         if(currentSearch == 'simple'){
             let haystack = baseForm(allText(d));
             if(exactPhrase) return haystack.includes(baseForm(fullText));
@@ -166,7 +79,7 @@
         try{
             let t = parse(fullText);
             // If it works, work through tree
-            return orMatches(t, {record, item: d});
+            return matchesQuery(t, d, bitsToHighlight);
         }catch(e){
             console.log('Error searching:', e);
             searchError = true;
@@ -178,81 +91,11 @@
 
     let searchError = false;
 
-    function orMatches(t, {record, item}, filter = false){
-        if(t.record){
-            // Only this record
-            return record == t.record;
-        }
-        if(t.any_of){
-            return t.any_of.some(e => andMatches(e, item, filter || t.filter));
-        }/*else if(Array.isArray(t)){
-            return andMatches(t, d);
-        }*/else{
-            console.log('malformed syntax!', t);
-            //alert('malformed syntax!');
-            return false;
-        }
-    }
-
-    function andMatches(t, d, filter = false){
-        let failed = false;
-        for(let e of t){
-            if(!notMatches(e, d, filter)) failed = true;
-        }
-        return !failed;
-    }
-
-    function notMatches(t, d, filter = false){
-        if(t.not){
-            return !starMatches(t.not, d, filter, true);
-        }else{
-            return starMatches(t, d, filter);
-        }
-    }
-
-    function starMatches(t, d, filter = false, not = false){
-        if(t.any_of){
-            // nested OR statement
-            return t.any_of.some(e => andMatches(e, d, t.filter || filter));
-        }
-        let re = escapeRegex(baseForm(t.term).replaceAll(/\s+/g, ' '));
-        let f = t.filter || filter;
-        if(['contributor','tag'].includes(f)){
-            f = `${f}s`; // plural in db
-        }
-        if(f){
-            if(f == 'citation'){
-                d = baseForm(`${d.author} ${d.citation}`);
-            }else{
-                d = baseForm(joinPossArray(d[f]) || '');
-            }
-        }else{
-            // Search all of it
-            d = baseForm(allText(d));
-            
-        }
-
-        if(!t.blurStart) re = `\\b${re}`;
-        if(!t.blurEnd) re = `${re}\\b`;
-        if(!not){
-            let bit = {term: re};
-            if(f){
-                bit.filter = f;
-            }
-            bitsToHighlight.push(bit);
-            
-        }
-        //console.log(t, d, re);
-        let exp = new RegExp(re);
-
-        return exp.test(d.replaceAll(/\s+/g, ' '));
-    }
-
     function upperInitial(s){
         return `${s[0].toUpperCase()}${s.slice(1)}`
     }
 
-    let possibleAtts = ['annotation', 'works', 'sources', 'contributors']
+    let possibleAtts = SEARCH_FIELDS;
     let bitsToHighlight = [];
     
     function highlightMatch(origText, where){
@@ -378,6 +221,10 @@
     $: indexItems = getIndexItems(indexMode, $data, indexSearch, indexSort);
     $: groupedIndexItems = getGroupedIndexItems(indexMode, indexItems, indexSort);
     $: detailRecord = isRecordDetail ? $data.find(d => d.record == recordRouteId) : false;
+    // Only built on a record page; rebuilt when the data syncs.
+    $: relatedIndex = isRecordDetail ? buildRelatedIndex($data) : null;
+    $: related = detailRecord && relatedIndex ? relatedRecords(relatedIndex, detailRecord) : [];
+    $: detailMeta = detailRecord ? citationMeta(detailRecord, window.location.origin) : [];
 
     let savedPD;
 
@@ -463,80 +310,6 @@
         if(path == '/works') return 'works';
         if(path == '/sources') return 'sources';
         return false;
-    }
-
-    function stripHtml(s){
-        if(!s) return '';
-        return String(s).replaceAll(/<[^>]+>/g, '').replaceAll(/&amp;/g, '&').replaceAll(/\s+/g, ' ').trim();
-    }
-
-    function canonicalIndexLabel(value, mode){
-        let clean = stripHtml(value);
-        if(mode == 'works' || mode == 'sources'){
-            clean = clean
-                .replace(/\s*\([^)]*\d[^)]*\)\.?$/g, '')
-                .replace(/\s*\[[^\]]*\d[^\]]*\]\.?$/g, '')
-                .replace(/\s+/g, ' ')
-                .trim();
-        }
-        return clean;
-    }
-
-    function parseCreatorTitle(value, fallbackCreator = ''){
-        let clean = canonicalIndexLabel(value, 'works');
-        let genericHeads = ['work', 'works', 'source', 'sources'];
-        let parts = clean.split(/:\s+/);
-        if(parts.length > 1){
-            let creator = parts.shift().trim();
-            let title = parts.join(': ').trim();
-            if(genericHeads.includes(baseForm(creator)) && title.includes(':')){
-                return parseCreatorTitle(title, fallbackCreator);
-            }
-            if(!genericHeads.includes(baseForm(creator))){
-                return {creator, title, attributed: true};
-            }
-            return {creator: fallbackCreator || 'Unattributed or General', title, attributed: !!fallbackCreator};
-        }
-        let commaAttribution = clean.match(/^([A-ZÀ-Þ][^,;:]{1,48}),\s+(.+)$/);
-        if(commaAttribution){
-            return {
-                creator: commaAttribution[1].trim(),
-                title: commaAttribution[2].trim(),
-                attributed: true
-            }
-        }
-        if(fallbackCreator) return {creator: fallbackCreator, title: clean, attributed: true};
-        return {creator: 'Unattributed or General', title: clean, attributed: false};
-    }
-
-    function splitCreatorTitle(value){
-        let parsed = parseCreatorTitle(value);
-        if(!parsed.attributed) return {creator: 'Unattributed or General', title: parsed.title};
-        return {
-            creator: parsed.creator,
-            title: parsed.title
-        }
-    }
-
-    function attributedIndexLabels(values, mode){
-        let currentCreator = '';
-        let labels = [];
-        for(let value of values || []){
-            let clean = canonicalIndexLabel(value, mode);
-            if(!clean) continue;
-            if(mode == 'works' || mode == 'sources'){
-                let parsed = parseCreatorTitle(clean, currentCreator);
-                if(parsed.attributed){
-                    currentCreator = parsed.creator;
-                    labels.push(`${parsed.creator}: ${parsed.title}`);
-                }else{
-                    labels.push(parsed.title);
-                }
-            }else{
-                labels.push(clean);
-            }
-        }
-        return labels;
     }
 
     function browseUrl(mode, value){
@@ -684,6 +457,23 @@
         window.open(`https://scholar.google.com/scholar?${p.toString()}`, '_blank');
     }
 
+    function exportFile(records, format, name){
+        if(!records.length) return;
+        if(format == 'ris'){
+            downloadText(recordsToRIS(records, window.location.origin), `${name}.ris`, 'application/x-research-info-systems');
+        }else{
+            downloadText(recordsToBibTeX(records, window.location.origin), `${name}.bib`, 'application/x-bibtex');
+        }
+    }
+
+    function exportRecord(d, format){
+        exportFile([d], format, `mbr-record-${d.record}`);
+    }
+
+    function exportResults(format){
+        exportFile(dataByName, format, fullText ? `mbr-search-${fullText.replace(/[^\w-]+/g, '_').slice(0, 40)}` : 'mbr-bibliography');
+    }
+
     async function exportSearch(){
         let p = new URLSearchParams();
         p.set('searchType', currentSearch);
@@ -752,6 +542,12 @@
     let filtersOpen = window.matchMedia('(min-width: 721px)').matches;
 
 </script>
+
+<svelte:head>
+    {#each detailMeta as m}
+        <meta name={m.name} content={m.content} />
+    {/each}
+</svelte:head>
 
 {#if indexMode}
     <main class="index_page">
@@ -874,7 +670,11 @@
         {#if detailRecord}
             <div class="detail_actions noprint">
                 <a href="/browse">Back to Browse</a>
-                <button type="button" on:click={() => window.print()}>Print record</button>
+                <span class="detail_buttons">
+                    <button type="button" on:click={() => exportRecord(detailRecord, 'ris')} title="For Zotero, EndNote, Mendeley">Export RIS</button>
+                    <button type="button" on:click={() => exportRecord(detailRecord, 'bibtex')} title="For LaTeX and BibTeX tools">Export BibTeX</button>
+                    <button type="button" on:click={() => window.print()}>Print record</button>
+                </span>
             </div>
             <article class="detail_record">
                 <h2>{#if detailRecord.author}<span class="author">{@html detailRecord.author}{#if !detailRecord.author.endsWith('.')}.{/if}</span>{/if} {@html detailRecord.citation}</h2>
@@ -891,6 +691,29 @@
                     {/if}
                 {/each}
             </article>
+            {#if related.length}
+                <section class="related noprint" aria-labelledby="related_heading">
+                    <h3 id="related_heading">Related records</h3>
+                    <p class="related_intro">Other items discussing the same works, sources or composers.</p>
+                    <ul>
+                        {#each related as r (r.record.record)}
+                            <li>
+                                <a href="/record/{r.record.record}">
+                                    {#if r.record.author}<span class="author">{@html r.record.author}{#if !r.record.author.endsWith('.')}.{/if}</span>{/if}
+                                    {@html r.record.citation}
+                                </a>
+                                <div class="related_reason">
+                                    {#if r.pieces.length}
+                                        Shares {@html r.pieces.slice(0, 3).join('; ')}{#if r.pieces.length > 3}; and {r.pieces.length - 3} more{/if}
+                                    {:else}
+                                        Also discusses {r.creators.slice(0, 4).join(', ')}
+                                    {/if}
+                                </div>
+                            </li>
+                        {/each}
+                    </ul>
+                </section>
+            {/if}
         {:else if !$localDataLoaded}
             <div class="empty_state">
                 <h2>Loading bibliography</h2>
@@ -1054,6 +877,13 @@
 
 	<div class="list_bar noprint">
 	    <span class="page_summary">{pageSummary}</span>
+	    {#if dataByName.length}
+	        <span class="export_results">
+	            Export {dataByName.length == $data.filter(d => !d.deleted).length ? 'all' : dataByName.length}:
+	            <button type="button" class="link_button" on:click={() => exportResults('ris')}>RIS</button>
+	            <button type="button" class="link_button" on:click={() => exportResults('bibtex')}>BibTeX</button>
+	        </span>
+	    {/if}
 	    {#if pageSize < dataByName.length}
 	        <span class="compact_pager" aria-label="Pagination">
 	            <button type="button" aria-label="Previous page" disabled={currentPage <= 1} on:click={() => gotoPage(currentPage - 1)}>‹</button>
@@ -1132,6 +962,9 @@
 	                <button type="button" class="chip scholar action_chip" on:click={e => {scholarSearch(d)}}>
 	                    Google Scholar
 	                </button>
+	                <button type="button" class="chip export action_chip" title="For Zotero, EndNote, Mendeley" on:click={e => {exportRecord(d, 'ris')}}>RIS</button>
+	                <button type="button" class="chip export action_chip" title="For LaTeX and BibTeX tools" on:click={e => {exportRecord(d, 'bibtex')}}>BibTeX</button>
+	                <a class="chip record action_chip" href="/record/{d.record}">Full record</a>
 	            </div>
 		        </details>
 	    {/each}
@@ -1388,6 +1221,60 @@
         font-weight: 700;
     }
 
+    .detail_buttons {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 0.4rem;
+    }
+
+    .related {
+        margin-top: 1.6rem;
+        border-top: 1px solid #ded2c0;
+        padding-top: 0.8rem;
+    }
+
+    .related h3 {
+        margin: 0 0 0.15rem;
+        font-size: 1.1rem;
+    }
+
+    .related_intro {
+        margin: 0 0 0.6rem;
+        color: #6f6357;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        font-size: 0.78rem;
+    }
+
+    .related ul {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .related li {
+        padding: 0.45rem 0;
+        border-bottom: 1px solid #eee4d6;
+        line-height: 1.4;
+    }
+
+    .related li a {
+        color: #2f2a25;
+        text-decoration: none;
+    }
+
+    .related li a:hover {
+        color: #7a2d22;
+        text-decoration: underline;
+    }
+
+    .related_reason {
+        margin-top: 0.15rem;
+        color: #6f6357;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        font-size: 0.74rem;
+    }
+
     .detail_record {
         border-top: 1px solid #ded2c0;
         padding-top: 0.7rem;
@@ -1573,6 +1460,30 @@
         color: #6f6357;
         font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         font-size: 0.78rem;
+    }
+
+    .export_results {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        margin-right: auto;
+    }
+
+    .link_button {
+        min-height: 0;
+        border: 0;
+        background: none;
+        color: #7a2d22;
+        font: inherit;
+        font-weight: 700;
+        padding: 0;
+        text-decoration: underline;
+        cursor: pointer;
+    }
+
+    .link_button:hover {
+        background: none;
+        color: #55271d;
     }
 
     .list_bar .page_summary {
@@ -1849,6 +1760,18 @@
         background-color: #dce8ee;
         border-color: #b9cdd7;
         color: #263f50;
+    }
+
+    .export {
+        background-color: #e3ebdc;
+        border-color: #c3d3b6;
+        color: #33472a;
+    }
+
+    a.action_chip {
+        display: inline-flex;
+        align-items: center;
+        text-decoration: none;
     }
 
     .action_chip {

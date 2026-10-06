@@ -2,7 +2,6 @@
     // @ts-nocheck
     import { onMount } from 'svelte';
     import BibDisplay from './lib/BibDisplay.svelte';
-    //import { data as localData } from './lib/data.js';
     import { pb } from './lib/pb.js';
     import AdminView from './lib/AdminView.svelte';
     import { data, localDataReady, params } from './lib/shared.svelte.js';
@@ -11,6 +10,7 @@
     import Home from './Home.svelte';
     import About from './About.svelte';
     import Ack from './Ack.svelte';
+    import Suggest from './Suggest.svelte';
 
     //let data = localData;
 
@@ -110,6 +110,7 @@
                 <a href="/works" class:selected={$path == '/works' || $path == '/sources'}>Works/Sources</a>
                 <a href="/about" class:selected={$path == '/about'}>About</a>
                 <a href="/acknowledgements" class:selected={$path == '/acknowledgements'}>Acknowledgements</a>
+                <a href="/suggest" class:selected={$path == '/suggest'}>Suggest an item</a>
             </nav>
             
         </div>
@@ -131,6 +132,8 @@
                 <About />
             {:else if $path === '/acknowledgements'} 
                 <Ack />
+            {:else if $path === '/suggest'}
+                <Suggest />
             {:else}
                 <Home />
             {/if}
@@ -149,7 +152,7 @@
         
     </div>
     <div class="version" style={$path === '/admin' ? "visibility: visible;" : ''}>
-        v0.16 (21 April 2026) 
+        v{__APP_VERSION__} (built {__BUILD_DATE__})
     </div>
     </div>
 <style>

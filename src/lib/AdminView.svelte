@@ -7,7 +7,6 @@
     import { data, tags as tagsList, contributors as contribList, params} from "./shared.svelte";
     import { onMount } from "svelte";
     import ListEdit from "./ListEdit.svelte";
-    //import { data } from "./data";
 
     let nextRecord = 1;
     $: if($data.length) nextRecord = Math.max(...$data.map(d => d.record)) + 1;
@@ -59,6 +58,59 @@
             if(v && !(Array.isArray(v) && v.length == 0)) out[k] = v;
         }
         return out;
+    }
+
+    // Public suggestions from /suggest, waiting for an editor.
+    let suggestions = [];
+    let showSuggestions = false;
+    let suggestionsError = '';
+    let acceptingSuggestion = false;
+
+    async function loadSuggestions(){
+        try{
+            suggestions = await pb.collection('suggestions').getFullList({filter: `status='new'`, sort: '-created'});
+            suggestionsError = '';
+        }catch(e){
+            console.log('Error loading suggestions', e);
+            suggestionsError = 'Could not load suggestions. Has the suggestions collection been created on the server? See pocketbase/README.md.';
+        }
+    }
+
+    // $params changes on every edit, so only fetch once per login.
+    let suggestionsLoaded = false;
+    $: if($params.logged_in && !suggestionsLoaded){
+        suggestionsLoaded = true;
+        loadSuggestions();
+    }
+
+    function useSuggestion(s){
+        resetNew();
+        author = s.author;
+        citation = s.citation;
+        annotation = s.annotation || '';
+        acceptingSuggestion = s;
+        showSuggestions = false;
+        $params.editRecord = 'new';
+    }
+
+    async function dismissSuggestion(s){
+        if(!confirm('Dismiss this suggestion?')) return;
+        try{
+            await pb.collection('suggestions').update(s.id, {status: 'dismissed'});
+            suggestions = suggestions.filter(x => x.id != s.id);
+        }catch(e){
+            console.log('Error dismissing suggestion', e);
+            suggestionsError = `Error: ${e}`;
+        }
+    }
+
+    async function markAccepted(s, record){
+        try{
+            await pb.collection('suggestions').update(s.id, {status: 'accepted', record});
+            suggestions = suggestions.filter(x => x.id != s.id);
+        }catch(e){
+            console.log('Error marking suggestion accepted', e);
+        }
     }
 
     $params.editItem = (d) =>{
@@ -113,6 +165,7 @@
                 rec.record = created.record;
                 if(!$data.some(d => d.record == rec.record)) $data = [...$data, rec];
                 result = 'Record added';
+                if(acceptingSuggestion) await markAccepted(acceptingSuggestion, rec.record);
                 if($data.length) nextRecord = Math.max(...$data.map(d => d.record)) + 1;
             }else if($params.editRecord){
                 rec.record = $params.editRecord;
@@ -124,6 +177,7 @@
                 console.log(`Shouldn't be able to do this!`)
             }
             $params.editRecord = '';
+            acceptingSuggestion = false;
             setTimeout(() => {result = ''}, 2000);
             resetNew();
         }catch(e){
@@ -173,6 +227,11 @@
 </script>
 <div class="admin">
     <div class="admin_badge"><span class="admin_dot"></span>Admin mode</div>
+    {#if $params.logged_in}
+        <button type="button" class="admin_badge suggestions_badge" on:click={() => {loadSuggestions(); showSuggestions = true;}}>
+            Suggestions{#if suggestions.length}<span class="count">{suggestions.length}</span>{/if}
+        </button>
+    {/if}
     {#if result}<div class="admin_result">{result}</div>{/if}
 </div>
 {#if !$params.logged_in}
@@ -196,10 +255,44 @@
                 </div>
             </form>
         </Dialog>
+{:else if showSuggestions}
+    <Dialog name="Suggested items" showHandle={true} showClose={true} on:close={() => {showSuggestions = false;}}>
+        <div class="admin_form suggestions_list">
+            {#if suggestionsError}
+                <div class="form_error">{suggestionsError}</div>
+            {:else if !suggestions.length}
+                <div class="form_intro">No suggestions waiting.</div>
+            {/if}
+            {#each suggestions as s (s.id)}
+                <div class="suggestion">
+                    <div class="suggestion_citation"><strong>{s.author}.</strong> {s.citation}</div>
+                    {#if s.annotation}<div class="suggestion_meta">Annotation: {s.annotation}</div>{/if}
+                    {#if s.notes}<div class="suggestion_meta">Notes: {s.notes}</div>{/if}
+                    <div class="suggestion_meta">
+                        From {s.submitter_name || 'anonymous'}{#if s.submitter_email} (<a href="mailto:{s.submitter_email}">{s.submitter_email}</a>){/if},
+                        {new Date(s.created).toLocaleDateString()}
+                    </div>
+                    <div class="dialog_actions">
+                        <button type="button" class="admin_button primary" on:click={() => useSuggestion(s)}>
+                            <span class="icon">{@html icons.plus}</span>
+                            Create entry from this
+                        </button>
+                        <button type="button" class="admin_button" on:click={() => dismissSuggestion(s)}>
+                            <span class="icon">{@html icons.trash}</span>
+                            Dismiss
+                        </button>
+                    </div>
+                </div>
+            {/each}
+        </div>
+    </Dialog>
 {:else if $params.editRecord}
-    <Dialog name={$params.editRecord == 'new' ? 'Add entry' : 'Edit entry'} showHandle={true} showClose={true} on:close={e => {$params.editRecord = '';}}>
+    <Dialog name={$params.editRecord == 'new' ? (acceptingSuggestion ? 'Add suggested entry' : 'Add entry') : 'Edit entry'} showHandle={true} showClose={true} on:close={e => {$params.editRecord = ''; acceptingSuggestion = false;}}>
         <form class="admin_form edit_form" on:submit|preventDefault={addOrUpdateItem}>
             <div class="edit_scroll">
+                {#if acceptingSuggestion?.notes}
+                    <div class="suggestion_meta">Submitter's notes: {acceptingSuggestion.notes}</div>
+                {/if}
                 <div class="field_group">
                     <span>Author <small>surname, forename</small></span>
                     <div contenteditable bind:innerHTML={author}></div>
@@ -283,6 +376,41 @@
 
     .admin_result {
         color: #294a2a;
+    }
+    .suggestions_badge {
+        cursor: pointer;
+        gap: 0.35rem;
+    }
+    .suggestions_badge:hover {
+        background: #fff3e4;
+    }
+    .suggestions_badge .count {
+        border-radius: 999px;
+        background: #b13b2f;
+        color: #fffaf1;
+        font-size: 0.68rem;
+        padding: 0 0.4rem;
+    }
+    .suggestions_list {
+        overflow-y: auto;
+    }
+    .suggestion {
+        border-top: 1px solid rgba(255, 250, 241, 0.25);
+        padding: 0.7rem 0;
+    }
+    .suggestion_citation {
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: 0.95rem;
+        margin-bottom: 0.3rem;
+    }
+    .suggestion_meta {
+        margin-bottom: 0.3rem;
+        font-size: 0.78rem;
+        opacity: 0.85;
+        white-space: pre-wrap;
+    }
+    .suggestion_meta a {
+        color: inherit;
     }
 
     .admin_form {

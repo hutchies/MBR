@@ -8,7 +8,7 @@
 
 <p>We have aimed to include items that focus on ideas about or instances of borrowing and reworking. When an item treats aspects of borrowing and reworking within a larger topic, the first sentence of the annotation gives a sense of the whole item, and the rest summarizes what the item says in relation to the uses of existing music.</p>
 
-<p>If you know of an item that is not in this bibliography and should be, please send the citation to me at burkhold@indiana.edu.</p>
+<p>If you know of an item that is not in this bibliography and should be, please <a href="/suggest">suggest it here</a> or send the citation to me at burkhold@indiana.edu.</p>
 
 <h3>How to Use the Bibliography</h3>
 
